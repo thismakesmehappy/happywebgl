@@ -206,7 +206,7 @@ export class Program {
     }
 
     this._ctx.gl.useProgram(this._program);
-    this._ctx['_checkError']('Program.use()');
+    this._ctx.checkError('Program.use()');
 
     return this;
   }
@@ -239,7 +239,7 @@ export class Program {
     }
 
     this._ctx.gl.useProgram(null);
-    this._ctx['_checkError']('Program.unuse()');
+    this._ctx.checkError('Program.unuse()');
 
     return this;
   }
@@ -292,7 +292,7 @@ export class Program {
     // Query WebGL
     const location = this._ctx.gl.getUniformLocation(this._program, name);
     this._uniformLocations.set(name, location);
-    this._ctx['_checkError'](`getUniformLocation("${name}")`);
+    this._ctx.checkError(`getUniformLocation("${name}")`);
 
     return location;
   }
@@ -336,7 +336,7 @@ export class Program {
       const glLocation = this._ctx.gl.getAttribLocation(this._program, name);
       location = glLocation !== -1 ? glLocation : -1;
       this._attributeLocations.set(name, location);
-      this._ctx['_checkError'](`getAttributeLocation("${name}")`);
+      this._ctx.checkError(`getAttributeLocation("${name}")`);
     }
 
     return location;
@@ -1606,7 +1606,7 @@ export class Program {
     }
 
     this._ctx.gl.deleteProgram(this._program);
-    this._ctx['_checkError']('Program.dispose()');
+    this._ctx.checkError('Program.dispose()');
 
     // Clear location caches
     this._uniformLocations.clear();

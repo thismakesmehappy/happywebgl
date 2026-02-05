@@ -1082,9 +1082,19 @@ export class GLContext {
   }
 
   /**
-   * Checks for WebGL errors and logs them if debug mode is enabled
+   * Checks for WebGL errors and logs them if debug mode is enabled.
+   *
+   * This method is useful for debugging WebGL calls in resources that
+   * use raw gl.* methods not wrapped by GLContext.
    *
    * @param context - Context string for error messages (e.g., function name)
+   */
+  checkError(context: string): void {
+    this._checkError(context);
+  }
+
+  /**
+   * Internal error checking method
    * @internal
    */
   private _checkError(context: string): void {
