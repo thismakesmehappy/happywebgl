@@ -137,7 +137,7 @@ describe('Program', () => {
       }),
       registerProgram: vi.fn(),
       queryCurrentProgram: vi.fn(() => null),
-      _checkError: vi.fn(),
+      checkError: vi.fn(),
     };
   });
 
@@ -806,29 +806,16 @@ describe('Program', () => {
     });
 
     describe('Scalar uniforms', () => {
-      it('setUniform1f sets float uniform', () => {
-        program.setUniform1f('uTime', 1.5);
-        expect(mockGL.uniform1f).toHaveBeenCalled();
-      });
-
-      it('setUniform1f sets negative float uniform', () => {
-        program.setUniform1f('uTime', -1.5);
-        expect(mockGL.uniform1f).toHaveBeenCalled();
-      });
-
-      it('setUniform1f sets integer uniform', () => {
-        program.setUniform1f('uTime', 5);
-        expect(mockGL.uniform1f).toHaveBeenCalled();
-      });
-
-      it('setUniform1i sets integer uniform', () => {
-        program.setUniform1i('uColor', 5);
-        expect(mockGL.uniform1i).toHaveBeenCalled();
-      });
-
-      it('setUniform1i sets negative integer uniform', () => {
-        program.setUniform1i('uColor', -5);
-        expect(mockGL.uniform1i).toHaveBeenCalled();
+      it.each([
+        ['setUniform1f', ['uTime', 1.5], () => mockGL.uniform1f],
+        ['setUniform1f', ['uTime', -1.5], () => mockGL.uniform1f],
+        ['setUniform1f', ['uTime', 5], () => mockGL.uniform1f],
+        ['setUniform1i', ['uColor', 5], () => mockGL.uniform1i],
+        ['setUniform1i', ['uColor', -5], () => mockGL.uniform1i],
+        ['setUniform1ui', ['uColor', 10], () => mockGL.uniform1ui],
+      ])('sets %s', (method, args, getFn) => {
+        (program as any)[method](...args);
+        expect(getFn()).toHaveBeenCalled();
       });
 
       it('setUniform1i throws if floating value', () => {
@@ -837,11 +824,6 @@ describe('Program', () => {
 
       it('setUniform1ui throws if floating value', () => {
         expect(() => program.setUniform1ui('uColor', 5.3)).toThrow();
-      });
-
-      it('setUniform1ui sets unsigned integer uniform', () => {
-        program.setUniform1ui('uColor', 10);
-        expect(mockGL.uniform1ui).toHaveBeenCalled();
       });
 
       it('setUniform1ui throws if negative value', () => {
@@ -860,471 +842,222 @@ describe('Program', () => {
     });
 
     describe('vec2 uniforms', () => {
-      it('setUniform2f with individual floating values', () => {
-        program.setUniform2f('uColor', 1.1, -2.3);
-        expect(mockGL.uniform2f).toHaveBeenCalled();
+      it.each([
+        ['setUniform2f', ['uColor', 1.1, -2.3], () => mockGL.uniform2f],
+        ['setUniform2f', ['uColor', new Vector2(1.1, -2.3)], () => mockGL.uniform2f],
+        ['setUniform2i', ['uColor', 1, -2], () => mockGL.uniform2i],
+        ['setUniform2i', ['uColor', new Vector2(1, 2)], () => mockGL.uniform2i],
+        ['setUniform2ui', ['uColor', 1, 2], () => mockGL.uniform2ui],
+      ])('sets %s', (method, args, getFn) => {
+        (program as any)[method](...args);
+        expect(getFn()).toHaveBeenCalled();
       });
 
-      it('setUniform2f with Vector2', () => {
-        const vec = new Vector2(1.1, -2.3);
-        program.setUniform2f('uColor', vec);
-        expect(mockGL.uniform2f).toHaveBeenCalled();
-      });
-
-      it('setUniform2f throws if y missing when x is number', () => {
-        expect(() => program.setUniform2f('uColor', 1.0)).toThrow('y is required');
-      });
-
-      it('setUniform2i with individual values', () => {
-        program.setUniform2i('uColor', 1, -2);
-        expect(mockGL.uniform2i).toHaveBeenCalled();
-      });
-
-      it('setUniform2i with Vector2', () => {
-        const vec = new Vector2(1, 2);
-        program.setUniform2i('uColor', vec);
-        expect(mockGL.uniform2i).toHaveBeenCalled();
-      });
-
-      it('setUniform2i throws if y missing when x is number', () => {
-        expect(() => program.setUniform2i('uColor', 1.0)).toThrow('y is required');
-      });
-
-      it('setUniform2ui sets uvec2 uniform', () => {
-        program.setUniform2ui('uColor', 1, 2);
-        expect(mockGL.uniform2ui).toHaveBeenCalled();
-      });
-
-      it('setUniform2ui throws if y missing when x is number', () => {
-        expect(() => program.setUniform2ui('uColor', 1.0)).toThrow('y is required');
+      it.each([
+        ['setUniform2f', 'y is required'],
+        ['setUniform2i', 'y is required'],
+        ['setUniform2ui', 'y is required'],
+      ])('%s throws if y missing when x is number', (method, message) => {
+        expect(() => (program as any)[method]('uColor', 1.0)).toThrow(message);
       });
     });
 
     describe('vec3 uniforms', () => {
-      it('setUniform3f with individual values', () => {
-        program.setUniform3f('uColor', 1.0, 2.0, 3.0);
-        expect(mockGL.uniform3f).toHaveBeenCalled();
+      it.each([
+        ['setUniform3f', ['uColor', 1.0, 2.0, 3.0], () => mockGL.uniform3f],
+        ['setUniform3f', ['uColor', new Vector3(1.0, 2.0, 3.0)], () => mockGL.uniform3f],
+        ['setUniform3i', ['uColor', 1, 2, 3], () => mockGL.uniform3i],
+        ['setUniform3ui', ['uColor', 1, 2, 3], () => mockGL.uniform3ui],
+      ])('sets %s', (method, args, getFn) => {
+        (program as any)[method](...args);
+        expect(getFn()).toHaveBeenCalled();
       });
 
-      it('setUniform3f with Vector3', () => {
-        const vec = new Vector3(1.0, 2.0, 3.0);
-        program.setUniform3f('uColor', vec);
-        expect(mockGL.uniform3f).toHaveBeenCalled();
-      });
-
-      it('setUniform3f throws if y or z missing when x is number', () => {
-        expect(() => program.setUniform3f('uColor', 1.0, 2.0)).toThrow('y and z are required');
-      });
-
-      it('setUniform3i sets ivec3 uniform', () => {
-        program.setUniform3i('uColor', 1, 2, 3);
-        expect(mockGL.uniform3i).toHaveBeenCalled();
-      });
-
-      it('setUniform3i throws if y or z missing when x is number', () => {
-        expect(() => program.setUniform3i('uColor', 1, 2)).toThrow('y and z are required');
-      });
-
-      it('setUniform3ui sets uvec3 uniform', () => {
-        program.setUniform3ui('uColor', 1, 2, 3);
-        expect(mockGL.uniform3ui).toHaveBeenCalled();
-      });
-
-      it('setUniform3ui throws if y or z missing when x is number', () => {
-        expect(() => program.setUniform3ui('uColor', 1, 2)).toThrow('y and z are required');
+      it.each([
+        ['setUniform3f', 'y and z are required'],
+        ['setUniform3i', 'y and z are required'],
+        ['setUniform3ui', 'y and z are required'],
+      ])('%s throws if y or z missing when x is number', (method, message) => {
+        expect(() => (program as any)[method]('uColor', 1, 2)).toThrow(message);
       });
     });
 
     describe('vec4 uniforms', () => {
-      it('setUniform4f with individual values', () => {
-        program.setUniform4f('uColor', 1.0, 0.0, 0.0, 1.0);
-        expect(mockGL.uniform4f).toHaveBeenCalled();
+      it.each([
+        ['setUniform4f', ['uColor', 1.0, 0.0, 0.0, 1.0], () => mockGL.uniform4f],
+        ['setUniform4f', ['uColor', new Vector4(1.0, 0.0, 0.0, 1.0)], () => mockGL.uniform4f],
+        ['setUniform4f', ['uColor', new Quaternion()], () => mockGL.uniform4f],
+        ['setUniform4i', ['uColor', 1, 2, 3, 4], () => mockGL.uniform4i],
+        ['setUniform4ui', ['uColor', 1, 2, 3, 4], () => mockGL.uniform4ui],
+      ])('sets %s', (method, args, getFn) => {
+        (program as any)[method](...args);
+        expect(getFn()).toHaveBeenCalled();
       });
 
-      it('setUniform4f with Vector4', () => {
-        const vec = new Vector4(1.0, 0.0, 0.0, 1.0);
-        program.setUniform4f('uColor', vec);
-        expect(mockGL.uniform4f).toHaveBeenCalled();
-      });
-
-      it('setUniform4f with Quaternion', () => {
-        const quat = new Quaternion();
-        program.setUniform4f('uColor', quat);
-        expect(mockGL.uniform4f).toHaveBeenCalled();
-      });
-
-      it('setUniform4f throws if y, z, or w missing when x is number', () => {
-        expect(() => program.setUniform4f('uColor', 1.0, 2.0, 3.0)).toThrow('y, z, and w are required');
-      });
-
-      it('setUniform4i sets ivec4 uniform', () => {
-        program.setUniform4i('uColor', 1, 2, 3, 4);
-        expect(mockGL.uniform4i).toHaveBeenCalled();
-      });
-
-      it('setUniform4i throws if y, z, or w missing when x is number', () => {
-        expect(() => program.setUniform4i('uColor', 1, 2, 3)).toThrow('y, z, and w are required');
-      });
-
-      it('setUniform4ui sets uvec4 uniform', () => {
-        program.setUniform4ui('uColor', 1, 2, 3, 4);
-        expect(mockGL.uniform4ui).toHaveBeenCalled();
-      });
-
-      it('setUniform4ui throws if y, z, or w missing when x is number', () => {
-        expect(() => program.setUniform4ui('uColor', 1, 2, 3)).toThrow('y, z, and w are required');
+      it.each([
+        ['setUniform4f', 'y, z, and w are required'],
+        ['setUniform4i', 'y, z, and w are required'],
+        ['setUniform4ui', 'y, z, and w are required'],
+      ])('%s throws if y, z, or w missing when x is number', (method, message) => {
+        expect(() => (program as any)[method]('uColor', 1, 2, 3)).toThrow(message);
       });
     });
 
     describe('Array uniforms (*fv, *iv, *uiv)', () => {
-      it('setUniform1fv sets float array', () => {
-        program.setUniform1fv('uColor', [1.0, 2.0, 3.0]);
-        expect(mockGL.uniform1fv).toHaveBeenCalled();
-      });
-
-      it('setUniform2fv sets vec2 array', () => {
-        program.setUniform2fv('uColor', [1.0, 2.0]);
-        expect(mockGL.uniform2fv).toHaveBeenCalled();
-      });
-
-      it('setUniform3fv sets vec3 array', () => {
-        program.setUniform3fv('uColor', [1.0, 2.0, 3.0]);
-        expect(mockGL.uniform3fv).toHaveBeenCalled();
-      });
-
-      it('setUniform4fv sets vec4 array', () => {
-        program.setUniform4fv('uColor', [1.0, 2.0, 3.0, 4.0]);
-        expect(mockGL.uniform4fv).toHaveBeenCalled();
-      });
-
-      it('setUniform1iv sets int array', () => {
-        program.setUniform1iv('uColor', [1, 2, 3]);
-        expect(mockGL.uniform1iv).toHaveBeenCalled();
-      });
-
-      it('setUniform2iv sets ivec2 array', () => {
-        program.setUniform2iv('uColor', [1, 2]);
-        expect(mockGL.uniform2iv).toHaveBeenCalled();
-      });
-
-      it('setUniform3iv sets ivec3 array', () => {
-        program.setUniform3iv('uColor', [1, 2, 3]);
-        expect(mockGL.uniform3iv).toHaveBeenCalled();
-      });
-
-      it('setUniform4iv sets ivec4 array', () => {
-        program.setUniform4iv('uColor', [1, 2, 3, 4]);
-        expect(mockGL.uniform4iv).toHaveBeenCalled();
-      });
-
-      it('setUniform1uiv sets uint array', () => {
-        program.setUniform1uiv('uColor', [1, 2, 3]);
-        expect(mockGL.uniform1uiv).toHaveBeenCalled();
-      });
-
-      it('setUniform2uiv sets uvec2 array', () => {
-        program.setUniform2uiv('uColor', [1, 2]);
-        expect(mockGL.uniform2uiv).toHaveBeenCalled();
-      });
-
-      it('setUniform3uiv sets uvec3 array', () => {
-        program.setUniform3uiv('uColor', [1, 2, 3]);
-        expect(mockGL.uniform3uiv).toHaveBeenCalled();
-      });
-
-      it('setUniform4uiv sets uvec4 array', () => {
-        program.setUniform4uiv('uColor', [1, 2, 3, 4]);
-        expect(mockGL.uniform4uiv).toHaveBeenCalled();
+      it.each([
+        ['setUniform1fv', [1.0, 2.0, 3.0], () => mockGL.uniform1fv],
+        ['setUniform2fv', [1.0, 2.0], () => mockGL.uniform2fv],
+        ['setUniform3fv', [1.0, 2.0, 3.0], () => mockGL.uniform3fv],
+        ['setUniform4fv', [1.0, 2.0, 3.0, 4.0], () => mockGL.uniform4fv],
+        ['setUniform1iv', [1, 2, 3], () => mockGL.uniform1iv],
+        ['setUniform2iv', [1, 2], () => mockGL.uniform2iv],
+        ['setUniform3iv', [1, 2, 3], () => mockGL.uniform3iv],
+        ['setUniform4iv', [1, 2, 3, 4], () => mockGL.uniform4iv],
+        ['setUniform1uiv', [1, 2, 3], () => mockGL.uniform1uiv],
+        ['setUniform2uiv', [1, 2], () => mockGL.uniform2uiv],
+        ['setUniform3uiv', [1, 2, 3], () => mockGL.uniform3uiv],
+        ['setUniform4uiv', [1, 2, 3, 4], () => mockGL.uniform4uiv],
+      ])('%s sets array', (method, data, getFn) => {
+        (program as any)[method]('uColor', data);
+        expect(getFn()).toHaveBeenCalled();
       });
     });
 
     describe('Matrix uniforms', () => {
-      it('setUniformMatrix2fv with Matrix2', () => {
-        const mat = new Matrix2();
-        program.setUniformMatrix2fv('uMatrix', mat);
-        expect(mockGL.uniformMatrix2fv).toHaveBeenCalled();
+      it.each([
+        ['setUniformMatrix2fv', new Matrix2(), () => mockGL.uniformMatrix2fv],
+        ['setUniformMatrix2fv', [1, 0, 0, 1], () => mockGL.uniformMatrix2fv],
+        ['setUniformMatrix3fv', new Matrix3(), () => mockGL.uniformMatrix3fv],
+        ['setUniformMatrix3fv', [1, 0, 0, 0, 1, 0, 0, 0, 1], () => mockGL.uniformMatrix3fv],
+        ['setUniformMatrix4fv', new Matrix4(), () => mockGL.uniformMatrix4fv],
+        ['setUniformMatrix4fv', new Float32Array(16), () => mockGL.uniformMatrix4fv],
+      ])('%s sets matrix', (method, data, getFn) => {
+        (program as any)[method]('uMatrix', data);
+        expect(getFn()).toHaveBeenCalled();
       });
 
-      it('setUniformMatrix2fv with array', () => {
-        program.setUniformMatrix2fv('uMatrix', [1, 0, 0, 1]);
-        expect(mockGL.uniformMatrix2fv).toHaveBeenCalled();
+      it.each([
+        ['setUniformMatrix2fv', new Float32Array(9), 'divisible by 4'],
+        ['setUniformMatrix3fv', new Float32Array(16), 'divisible by 9'],
+        ['setUniformMatrix4fv', new Float32Array(9), 'divisible by 16'],
+      ])('%s throws with wrong array size', (method, data, message) => {
+        expect(() => (program as any)[method]('uMatrix', data)).toThrow(message);
       });
 
-      it('setUniformMatrix2fv throws with wrong array size', () => {
-        expect(() => program.setUniformMatrix2fv('uMatrix', new Float32Array(9))).toThrow('divisible by 4');
+      const matrixCases = [
+        {
+          method: 'setUniformMatrix2x3fv',
+          glFn: () => mockGL.uniformMatrix2x3fv,
+          rows: 2,
+          cols: 3,
+          size: 6,
+          wrongArraySize: 8,
+          wrongMatrix: [4, 3],
+        },
+        {
+          method: 'setUniformMatrix2x4fv',
+          glFn: () => mockGL.uniformMatrix2x4fv,
+          rows: 2,
+          cols: 4,
+          size: 8,
+          wrongArraySize: 6,
+          wrongMatrix: [3, 4],
+        },
+        {
+          method: 'setUniformMatrix3x2fv',
+          glFn: () => mockGL.uniformMatrix3x2fv,
+          rows: 3,
+          cols: 2,
+          size: 6,
+          wrongArraySize: 8,
+          wrongMatrix: [3, 3],
+        },
+        {
+          method: 'setUniformMatrix3x4fv',
+          glFn: () => mockGL.uniformMatrix3x4fv,
+          rows: 3,
+          cols: 4,
+          size: 12,
+          wrongArraySize: 8,
+          wrongMatrix: [4, 4],
+        },
+        {
+          method: 'setUniformMatrix4x2fv',
+          glFn: () => mockGL.uniformMatrix4x2fv,
+          rows: 4,
+          cols: 2,
+          size: 8,
+          wrongArraySize: 6,
+          wrongMatrix: [4, 3],
+        },
+        {
+          method: 'setUniformMatrix4x3fv',
+          glFn: () => mockGL.uniformMatrix4x3fv,
+          rows: 4,
+          cols: 3,
+          size: 12,
+          wrongArraySize: 8,
+          wrongMatrix: [4, 4],
+        },
+      ];
+
+      it.each(matrixCases)('%s sets with Float32Array', ({ method, glFn, size }) => {
+        (program as any)[method]('uMatrix', new Float32Array(size));
+        expect(glFn()).toHaveBeenCalled();
       });
 
-      it('setUniformMatrix3fv with Matrix3', () => {
-        const mat = new Matrix3();
-        program.setUniformMatrix3fv('uMatrix', mat);
-        expect(mockGL.uniformMatrix3fv).toHaveBeenCalled();
+      it.each(matrixCases)('%s sets with number[]', ({ method, glFn, size }) => {
+        const data = Array.from({ length: size }, (_, i) => i + 1);
+        (program as any)[method]('uMatrix', data);
+        expect(glFn()).toHaveBeenCalled();
       });
 
-      it('setUniformMatrix3fv with array', () => {
-        program.setUniformMatrix3fv('uMatrix', [1, 0, 0, 0, 1, 0, 0, 0, 1]);
-        expect(mockGL.uniformMatrix3fv).toHaveBeenCalled();
+      it.each(matrixCases)('%s sets with Matrix', ({ method, glFn, rows, cols, size }) => {
+        const [TestMatrix, _] = createMatrixPair(rows, cols);
+        const data = Array.from({ length: size }, (_, i) => i + 1);
+        const matrix = new TestMatrix(...data);
+        (program as any)[method]('uMatrix', matrix);
+        expect(glFn()).toHaveBeenCalled();
       });
 
-      it('setUniformMatrix3fv throws with wrong array size', () => {
-        expect(() => program.setUniformMatrix3fv('uMatrix', new Float32Array(16))).toThrow('divisible by 9');
+      it.each(matrixCases)('%s throws with wrong array size', ({ method, wrongArraySize }) => {
+        expect(() =>
+          (program as any)[method]('uMatrix', new Float32Array(wrongArraySize)),
+        ).toThrow();
       });
 
-      it('setUniformMatrix4fv with Matrix4', () => {
-        const mat = new Matrix4();
-        program.setUniformMatrix4fv('uMatrix', mat);
-        expect(mockGL.uniformMatrix4fv).toHaveBeenCalled();
+      it.each(matrixCases)('%s throws with wrong Matrix size', ({ method, wrongMatrix }) => {
+        const [TestMatrix, _] = createMatrixPair(wrongMatrix[0], wrongMatrix[1]);
+        const size = wrongMatrix[0] * wrongMatrix[1];
+        const data = Array.from({ length: size }, (_, i) => i + 1);
+        const matrix = new TestMatrix(...data);
+        expect(() => (program as any)[method]('uMatrix', matrix)).toThrow();
       });
 
-      it('setUniformMatrix4fv with array', () => {
-        program.setUniformMatrix4fv('uMatrix', new Float32Array(16));
-        expect(mockGL.uniformMatrix4fv).toHaveBeenCalled();
-      });
-
-      it('setUniformMatrix4fv throws with wrong array size', () => {
-        expect(() => program.setUniformMatrix4fv('uMatrix', new Float32Array(9))).toThrow('divisible by 16');
-      });
-
-      it('setUniformMatrix2x3fv sets mat2x3', () => {
-        program.setUniformMatrix2x3fv('uMatrix', new Float32Array(6));
-        expect(mockGL.uniformMatrix2x3fv).toHaveBeenCalled();
-      });
-
-      it('setUniformMatrix2x3fv sets mat2x3 with number[]', () => {
-        program.setUniformMatrix2x3fv('uMatrix', [1, 2, 3, 4, 5, 6]);
-        expect(mockGL.uniformMatrix2x3fv).toHaveBeenCalled();
-      });
-
-      it('setUniformMatrix2x3fv sets mat2x3 with Matrix', () => {
-        const [TestMatrix2x3, _] = createMatrixPair(2, 3);
-        const matrix = new TestMatrix2x3(1, 2, 3, 4, 5, 6);
-        program.setUniformMatrix2x3fv('uMatrix', matrix);
-        expect(mockGL.uniformMatrix2x3fv).toHaveBeenCalled();
-      });
-
-      it('setUniformMatrix2x3fv throws with wrong array size', () => {
-        expect(() => program.setUniformMatrix2x3fv('uMatrix', new Float32Array(8))).toThrow();
-      });
-
-      it('setUniformMatrix2x3fv throws mat2x3 with wrong Matrix size', () => {
-        const [TestMatrix4x3, _] = createMatrixPair(4, 3);
-        const matrix = new TestMatrix4x3(1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6);
-        expect(() => program.setUniformMatrix2x3fv('uMatrix', matrix)).toThrow();
-      });
-
-
-      it('setUniformMatrix2x4fv sets mat2x4', () => {
-        program.setUniformMatrix2x4fv('uMatrix', new Float32Array(8));
-        expect(mockGL.uniformMatrix2x4fv).toHaveBeenCalled();
-      });
-
-      it('setUniformMatrix2x4fv sets mat2x4 with number[]', () => {
-        program.setUniformMatrix2x4fv('uMatrix', [1, 2, 3, 4, 5, 6, 7, 8]);
-        expect(mockGL.uniformMatrix2x4fv).toHaveBeenCalled();
-      });
-
-      it('setUniformMatrix2x4fv sets mat2x4 with Matrix', () => {
-        const [TestMatrix2x4, _] = createMatrixPair(2, 4);
-        const matrix = new TestMatrix2x4(1, 2, 3, 4, 5, 6, 7, 8);
-        program.setUniformMatrix2x4fv('uMatrix', matrix);
-        expect(mockGL.uniformMatrix2x4fv).toHaveBeenCalled();
-      });
-
-      it('setUniformMatrix2x4fv throws with wrong array size', () => {
-        expect(() => program.setUniformMatrix2x4fv('uMatrix', new Float32Array(6))).toThrow();
-      });
-
-      it('setUniformMatrix2x4fv throws with wrong Matrix size', () => {
-        const [TestMatrix3x4, _] = createMatrixPair(3, 4);
-        const matrix = new TestMatrix3x4(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
-        expect(() => program.setUniformMatrix2x4fv('uMatrix', matrix)).toThrow();
-      });
-
-      it('setUniformMatrix3x2fv sets mat3x2', () => {
-        program.setUniformMatrix3x2fv('uMatrix', new Float32Array(6));
-        expect(mockGL.uniformMatrix3x2fv).toHaveBeenCalled();
-      });
-
-      it('setUniformMatrix3x2fv sets mat3x2 with number[]', () => {
-        program.setUniformMatrix3x2fv('uMatrix', [1, 2, 3, 4, 5, 6]);
-        expect(mockGL.uniformMatrix3x2fv).toHaveBeenCalled();
-      });
-
-      it('setUniformMatrix3x2fv sets mat3x2 with Matrix', () => {
-        const [TestMatrix3x2, _] = createMatrixPair(3, 2);
-        const matrix = new TestMatrix3x2(1, 2, 3, 4, 5, 6);
-        program.setUniformMatrix3x2fv('uMatrix', matrix);
-        expect(mockGL.uniformMatrix3x2fv).toHaveBeenCalled();
-      });
-
-      it('setUniformMatrix3x2fv throws with wrong array size', () => {
-        expect(() => program.setUniformMatrix3x2fv('uMatrix', new Float32Array(8))).toThrow();
-      });
-
-      it('setUniformMatrix3x2fv throws with wrong Matrix size', () => {
-        const [TestMatrix3x3, _] = createMatrixPair(3, 3);
-        const matrix = new TestMatrix3x3(1, 2, 3, 4, 5, 6, 7, 8, 9);
-        expect(() => program.setUniformMatrix3x2fv('uMatrix', matrix)).toThrow();
-      });
-
-      it('setUniformMatrix3x4fv sets mat3x4', () => {
-        program.setUniformMatrix3x4fv('uMatrix', new Float32Array(12));
-        expect(mockGL.uniformMatrix3x4fv).toHaveBeenCalled();
-      });
-
-      it('setUniformMatrix3x4fv sets mat3x4 with number[]', () => {
-        program.setUniformMatrix3x4fv('uMatrix', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
-        expect(mockGL.uniformMatrix3x4fv).toHaveBeenCalled();
-      });
-
-      it('setUniformMatrix3x4fv sets mat3x4 with Matrix', () => {
-        const [TestMatrix3x4, _] = createMatrixPair(3, 4);
-        const matrix = new TestMatrix3x4(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
-        program.setUniformMatrix3x4fv('uMatrix', matrix);
-        expect(mockGL.uniformMatrix3x4fv).toHaveBeenCalled();
-      });
-
-      it('setUniformMatrix3x4fv throws with wrong array size', () => {
-        expect(() => program.setUniformMatrix3x4fv('uMatrix', new Float32Array(8))).toThrow();
-      });
-
-      it('setUniformMatrix3x4fv throws with wrong Matrix size', () => {
-        const [TestMatrix4x4, _] = createMatrixPair(4, 4);
-        const matrix = new TestMatrix4x4(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
-        expect(() => program.setUniformMatrix3x4fv('uMatrix', matrix)).toThrow();
-      });
-
-      it('setUniformMatrix4x2fv sets mat4x2', () => {
-        program.setUniformMatrix4x2fv('uMatrix', new Float32Array(8));
-        expect(mockGL.uniformMatrix4x2fv).toHaveBeenCalled();
-      });
-
-      it('setUniformMatrix4x2fv sets mat4x2 with number[]', () => {
-        program.setUniformMatrix4x2fv('uMatrix', [1, 2, 3, 4, 5, 6, 7, 8]);
-        expect(mockGL.uniformMatrix4x2fv).toHaveBeenCalled();
-      });
-
-      it('setUniformMatrix4x2fv sets mat4x2 with Matrix', () => {
-        const [TestMatrix4x2, _] = createMatrixPair(4, 2);
-        const matrix = new TestMatrix4x2(1, 2, 3, 4, 5, 6, 7, 8);
-        program.setUniformMatrix4x2fv('uMatrix', matrix);
-        expect(mockGL.uniformMatrix4x2fv).toHaveBeenCalled();
-      });
-
-      it('setUniformMatrix4x2fv throws with wrong array size', () => {
-        expect(() => program.setUniformMatrix4x2fv('uMatrix', new Float32Array(6))).toThrow();
-      });
-
-      it('setUniformMatrix4x2fv throws with wrong Matrix size', () => {
-        const [TestMatrix4x3, _] = createMatrixPair(4, 3);
-        const matrix = new TestMatrix4x3(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
-        expect(() => program.setUniformMatrix4x2fv('uMatrix', matrix)).toThrow();
-      });
-
-      it('setUniformMatrix4x3fv sets mat4x3', () => {
-        program.setUniformMatrix4x3fv('uMatrix', new Float32Array(12));
-        expect(mockGL.uniformMatrix4x3fv).toHaveBeenCalled();
-      });
-
-      it('setUniformMatrix4x3fv sets mat4x3 with Matrix', () => {
-        const [TestMatrix4x3, _] = createMatrixPair(4, 3);
-        const matrix = new TestMatrix4x3(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
-        program.setUniformMatrix4x3fv('uMatrix', matrix);
-        expect(mockGL.uniformMatrix4x3fv).toHaveBeenCalled();
-      });
-
-      it('setUniformMatrix4x3fv sets mat4x3 with number[]', () => {
-        program.setUniformMatrix4x3fv('uMatrix', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
-        expect(mockGL.uniformMatrix4x3fv).toHaveBeenCalled();
-      });
-
-      it('setUniformMatrix4x3fv throws with wrong array size', () => {
-        expect(() => program.setUniformMatrix4x3fv('uMatrix', new Float32Array(8))).toThrow();
-      });
-
-      it('setUniformMatrix4x3fv throws with wrong Matrix size', () => {
-        const [TestMatrix4x4, _] = createMatrixPair(4, 4);
-        const matrix = new TestMatrix4x4(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
-        expect(() => program.setUniformMatrix4x3fv('uMatrix', matrix)).toThrow();
-      });
-
-      it('setUniformMatrix2fv supports transpose parameter', () => {
-        const mat = new Matrix2();
-        program.setUniformMatrix2fv('uMatrix', mat, true);
-        expect(mockGL.uniformMatrix2fv).toHaveBeenCalledWith(
+      it.each([
+        ['setUniformMatrix2fv', () => new Matrix2(), () => mockGL.uniformMatrix2fv, true],
+        ['setUniformMatrix3fv', () => new Matrix3(), () => mockGL.uniformMatrix3fv, true],
+        ['setUniformMatrix4fv', () => new Matrix4(), () => mockGL.uniformMatrix4fv, true],
+      ])('%s supports transpose parameter (square)', (method, getData, getFn, transpose) => {
+        const mat = getData();
+        (program as any)[method]('uMatrix', mat, transpose);
+        expect(getFn()).toHaveBeenCalledWith(
           expect.anything(),
-          true,
-          mat.elements,
+          transpose,
+          (mat as any).elements,
         );
       });
 
-      it('setUniformMatrix3fv supports transpose parameter', () => {
-        const mat = new Matrix3();
-        program.setUniformMatrix3fv('uMatrix', mat, true);
-        expect(mockGL.uniformMatrix3fv).toHaveBeenCalledWith(
-          expect.anything(),
-          true,
-          mat.elements,
-        );
-      });
-
-      it('setUniformMatrix4fv supports transpose parameter', () => {
-        const mat = new Matrix4();
-        program.setUniformMatrix4fv('uMatrix', mat, true);
-        expect(mockGL.uniformMatrix4fv).toHaveBeenCalledWith(
-          expect.anything(),
-          true,
-          mat.elements,
-        );
-      });
-
-      it('setUniformMatrix2x3fv supports transpose parameter', () => {
-        program.setUniformMatrix2x3fv('uMatrix', new Float32Array(6), true);
-        expect(mockGL.uniformMatrix2x3fv).toHaveBeenCalledWith(
-          expect.anything(),
-          true,
-          expect.any(Float32Array),
-        );
-      });
-
-      it('setUniformMatrix2x4fv supports transpose parameter', () => {
-        program.setUniformMatrix2x4fv('uMatrix', new Float32Array(8), true);
-        expect(mockGL.uniformMatrix2x4fv).toHaveBeenCalledWith(
-          expect.anything(),
-          true,
-          expect.any(Float32Array),
-        );
-      });
-
-      it('setUniformMatrix3x2fv supports transpose parameter', () => {
-        program.setUniformMatrix3x2fv('uMatrix', new Float32Array(6), true);
-        expect(mockGL.uniformMatrix3x2fv).toHaveBeenCalledWith(
-          expect.anything(),
-          true,
-          expect.any(Float32Array),
-        );
-      });
-
-      it('setUniformMatrix3x4fv supports transpose parameter', () => {
-        program.setUniformMatrix3x4fv('uMatrix', new Float32Array(12), true);
-        expect(mockGL.uniformMatrix3x4fv).toHaveBeenCalledWith(
-          expect.anything(),
-          true,
-          expect.any(Float32Array),
-        );
-      });
-
-      it('setUniformMatrix4x2fv supports transpose parameter', () => {
-        program.setUniformMatrix4x2fv('uMatrix', new Float32Array(8), true);
-        expect(mockGL.uniformMatrix4x2fv).toHaveBeenCalledWith(
-          expect.anything(),
-          true,
-          expect.any(Float32Array),
-        );
-      });
-
-      it('setUniformMatrix4x3fv supports transpose parameter', () => {
-        program.setUniformMatrix4x3fv('uMatrix', new Float32Array(12), true);
-        expect(mockGL.uniformMatrix4x3fv).toHaveBeenCalledWith(
+      it.each([
+        ['setUniformMatrix2x3fv', 6, () => mockGL.uniformMatrix2x3fv],
+        ['setUniformMatrix2x4fv', 8, () => mockGL.uniformMatrix2x4fv],
+        ['setUniformMatrix3x2fv', 6, () => mockGL.uniformMatrix3x2fv],
+        ['setUniformMatrix3x4fv', 12, () => mockGL.uniformMatrix3x4fv],
+        ['setUniformMatrix4x2fv', 8, () => mockGL.uniformMatrix4x2fv],
+        ['setUniformMatrix4x3fv', 12, () => mockGL.uniformMatrix4x3fv],
+      ])('%s supports transpose parameter', (method, size, getFn) => {
+        (program as any)[method]('uMatrix', new Float32Array(size), true);
+        expect(getFn()).toHaveBeenCalledWith(
           expect.anything(),
           true,
           expect.any(Float32Array),
@@ -1347,164 +1080,42 @@ describe('Program', () => {
     });
 
     describe('Disposed program errors', () => {
-      it('setUniform1i throws when disposed', () => {
+      it.each([
+        ['setUniform1i', ['uColor', 1]],
+        ['setUniform1ui', ['uColor', 1]],
+        ['setUniform2f', ['uColor', 1, 2]],
+        ['setUniform2i', ['uColor', 1, 2]],
+        ['setUniform2ui', ['uColor', 1, 2]],
+        ['setUniform3f', ['uColor', 1, 2, 3]],
+        ['setUniform3i', ['uColor', 1, 2, 3]],
+        ['setUniform3ui', ['uColor', 1, 2, 3]],
+        ['setUniform4f', ['uColor', 1, 2, 3, 4]],
+        ['setUniform4i', ['uColor', 1, 2, 3, 4]],
+        ['setUniform4ui', ['uColor', 1, 2, 3, 4]],
+        ['setUniform1fv', ['uColor', [1]]],
+        ['setUniform2fv', ['uColor', [1, 2]]],
+        ['setUniform3fv', ['uColor', [1, 2, 3]]],
+        ['setUniform4fv', ['uColor', [1, 2, 3, 4]]],
+        ['setUniform1iv', ['uColor', [1]]],
+        ['setUniform2iv', ['uColor', [1, 2]]],
+        ['setUniform3iv', ['uColor', [1, 2, 3]]],
+        ['setUniform4iv', ['uColor', [1, 2, 3, 4]]],
+        ['setUniform1uiv', ['uColor', [1]]],
+        ['setUniform2uiv', ['uColor', [1, 2]]],
+        ['setUniform3uiv', ['uColor', [1, 2, 3]]],
+        ['setUniform4uiv', ['uColor', [1, 2, 3, 4]]],
+        ['setUniformMatrix2fv', ['uMatrix', [1, 0, 0, 1]]],
+        ['setUniformMatrix3fv', ['uMatrix', new Float32Array(9)]],
+        ['setUniformMatrix4fv', ['uMatrix', new Float32Array(16)]],
+        ['setUniformMatrix2x3fv', ['uMatrix', new Float32Array(6)]],
+        ['setUniformMatrix2x4fv', ['uMatrix', new Float32Array(8)]],
+        ['setUniformMatrix3x2fv', ['uMatrix', new Float32Array(6)]],
+        ['setUniformMatrix3x4fv', ['uMatrix', new Float32Array(12)]],
+        ['setUniformMatrix4x2fv', ['uMatrix', new Float32Array(8)]],
+        ['setUniformMatrix4x3fv', ['uMatrix', new Float32Array(12)]],
+      ])('%s throws when disposed', (method, args) => {
         program.dispose();
-        expect(() => program.setUniform1i('uColor', 1)).toThrow('Program has been disposed');
-      });
-
-      it('setUniform1ui throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniform1ui('uColor', 1)).toThrow('Program has been disposed');
-      });
-
-      it('setUniform2f throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniform2f('uColor', 1, 2)).toThrow('Program has been disposed');
-      });
-
-      it('setUniform2i throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniform2i('uColor', 1, 2)).toThrow('Program has been disposed');
-      });
-
-      it('setUniform2ui throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniform2ui('uColor', 1, 2)).toThrow('Program has been disposed');
-      });
-
-      it('setUniform3f throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniform3f('uColor', 1, 2, 3)).toThrow('Program has been disposed');
-      });
-
-      it('setUniform3i throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniform3i('uColor', 1, 2, 3)).toThrow('Program has been disposed');
-      });
-
-      it('setUniform3ui throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniform3ui('uColor', 1, 2, 3)).toThrow('Program has been disposed');
-      });
-
-      it('setUniform4f throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniform4f('uColor', 1, 2, 3, 4)).toThrow('Program has been disposed');
-      });
-
-      it('setUniform4i throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniform4i('uColor', 1, 2, 3, 4)).toThrow('Program has been disposed');
-      });
-
-      it('setUniform4ui throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniform4ui('uColor', 1, 2, 3, 4)).toThrow('Program has been disposed');
-      });
-
-      it('setUniform1fv throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniform1fv('uColor', [1])).toThrow('Program has been disposed');
-      });
-
-      it('setUniform2fv throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniform2fv('uColor', [1, 2])).toThrow('Program has been disposed');
-      });
-
-      it('setUniform3fv throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniform3fv('uColor', [1, 2, 3])).toThrow('Program has been disposed');
-      });
-
-      it('setUniform4fv throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniform4fv('uColor', [1, 2, 3, 4])).toThrow('Program has been disposed');
-      });
-
-      it('setUniform1iv throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniform1iv('uColor', [1])).toThrow('Program has been disposed');
-      });
-
-      it('setUniform2iv throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniform2iv('uColor', [1, 2])).toThrow('Program has been disposed');
-      });
-
-      it('setUniform3iv throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniform3iv('uColor', [1, 2, 3])).toThrow('Program has been disposed');
-      });
-
-      it('setUniform4iv throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniform4iv('uColor', [1, 2, 3, 4])).toThrow('Program has been disposed');
-      });
-
-      it('setUniform1uiv throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniform1uiv('uColor', [1])).toThrow('Program has been disposed');
-      });
-
-      it('setUniform2uiv throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniform2uiv('uColor', [1, 2])).toThrow('Program has been disposed');
-      });
-
-      it('setUniform3uiv throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniform3uiv('uColor', [1, 2, 3])).toThrow('Program has been disposed');
-      });
-
-      it('setUniform4uiv throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniform4uiv('uColor', [1, 2, 3, 4])).toThrow('Program has been disposed');
-      });
-
-      it('setUniformMatrix2fv throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniformMatrix2fv('uMatrix', [1, 0, 0, 1])).toThrow('Program has been disposed');
-      });
-
-      it('setUniformMatrix3fv throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniformMatrix3fv('uMatrix', new Float32Array(9))).toThrow('Program has been disposed');
-      });
-
-      it('setUniformMatrix4fv throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniformMatrix4fv('uMatrix', new Float32Array(16))).toThrow('Program has been disposed');
-      });
-
-      it('setUniformMatrix2x3fv throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniformMatrix2x3fv('uMatrix', new Float32Array(6))).toThrow('Program has been disposed');
-      });
-
-      it('setUniformMatrix2x4fv throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniformMatrix2x4fv('uMatrix', new Float32Array(8))).toThrow('Program has been disposed');
-      });
-
-      it('setUniformMatrix3x2fv throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniformMatrix3x2fv('uMatrix', new Float32Array(6))).toThrow('Program has been disposed');
-      });
-
-      it('setUniformMatrix3x4fv throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniformMatrix3x4fv('uMatrix', new Float32Array(12))).toThrow('Program has been disposed');
-      });
-
-      it('setUniformMatrix4x2fv throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniformMatrix4x2fv('uMatrix', new Float32Array(8))).toThrow('Program has been disposed');
-      });
-
-      it('setUniformMatrix4x3fv throws when disposed', () => {
-        program.dispose();
-        expect(() => program.setUniformMatrix4x3fv('uMatrix', new Float32Array(12))).toThrow('Program has been disposed');
+        expect(() => (program as any)[method](...args)).toThrow('Program has been disposed');
       });
     });
 

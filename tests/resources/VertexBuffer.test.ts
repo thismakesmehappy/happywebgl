@@ -60,47 +60,19 @@ describe('VertexBuffer', () => {
       expect(vbo.usage).toBe(BufferUsage.DYNAMIC_DRAW);
     });
 
-    it('validates componentSize (1)', () => {
-      const vbo = new VertexBuffer(mockGLContext as GLContext, 1);
-      expect(vbo.componentSize).toBe(1);
+    it.each([1, 2, 3, 4])('validates componentSize (%s)', (size) => {
+      const vbo = new VertexBuffer(mockGLContext as GLContext, size);
+      expect(vbo.componentSize).toBe(size);
     });
 
-    it('validates componentSize (2)', () => {
-      const vbo = new VertexBuffer(mockGLContext as GLContext, 2);
-      expect(vbo.componentSize).toBe(2);
-    });
-
-    it('validates componentSize (3)', () => {
-      const vbo = new VertexBuffer(mockGLContext as GLContext, 3);
-      expect(vbo.componentSize).toBe(3);
-    });
-
-    it('validates componentSize (4)', () => {
-      const vbo = new VertexBuffer(mockGLContext as GLContext, 4);
-      expect(vbo.componentSize).toBe(4);
-    });
-
-    it('throws error for componentSize 0', () => {
+    it.each([
+      ['0', 0],
+      ['5', 5],
+      ['negative', -1],
+      ['non-integer', 3.5],
+    ])('throws error for componentSize %s', (_label, size) => {
       expect(() => {
-        new VertexBuffer(mockGLContext as GLContext, 0);
-      }).toThrow(/componentSize must be 1, 2, 3, or 4/);
-    });
-
-    it('throws error for componentSize 5', () => {
-      expect(() => {
-        new VertexBuffer(mockGLContext as GLContext, 5);
-      }).toThrow(/componentSize must be 1, 2, 3, or 4/);
-    });
-
-    it('throws error for negative componentSize', () => {
-      expect(() => {
-        new VertexBuffer(mockGLContext as GLContext, -1);
-      }).toThrow(/componentSize must be 1, 2, 3, or 4/);
-    });
-
-    it('throws error for non-integer componentSize', () => {
-      expect(() => {
-        new VertexBuffer(mockGLContext as GLContext, 3.5);
+        new VertexBuffer(mockGLContext as GLContext, size);
       }).toThrow(/componentSize must be 1, 2, 3, or 4/);
     });
   });
@@ -134,34 +106,19 @@ describe('VertexBuffer', () => {
       expect(vbo.componentSize).toBe(3);
     });
 
-    it('supports all valid component sizes (1-4)', () => {
-      for (let size of [1, 2, 3, 4]) {
+    it.each([1, 2, 3, 4])('supports valid component size %s', (size) => {
+      vbo.setComponentSize(size);
+      expect(vbo.componentSize).toBe(size);
+    });
+
+    it.each([
+      ['0', 0],
+      ['5', 5],
+      ['negative', -1],
+      ['non-integer', 3.5],
+    ])('throws error for invalid component size %s', (_label, size) => {
+      expect(() => {
         vbo.setComponentSize(size);
-        expect(vbo.componentSize).toBe(size);
-      }
-    });
-
-    it('throws error for invalid component size (0)', () => {
-      expect(() => {
-        vbo.setComponentSize(0);
-      }).toThrow(/componentSize must be 1, 2, 3, or 4/);
-    });
-
-    it('throws error for invalid component size (5)', () => {
-      expect(() => {
-        vbo.setComponentSize(5);
-      }).toThrow(/componentSize must be 1, 2, 3, or 4/);
-    });
-
-    it('throws error for invalid component size (negative)', () => {
-      expect(() => {
-        vbo.setComponentSize(-1);
-      }).toThrow(/componentSize must be 1, 2, 3, or 4/);
-    });
-
-    it('throws error for non-integer componentSize', () => {
-      expect(() => {
-        vbo.setComponentSize(3.5);
       }).toThrow(/componentSize must be 1, 2, 3, or 4/);
     });
 

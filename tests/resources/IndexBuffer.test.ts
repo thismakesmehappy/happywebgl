@@ -105,18 +105,12 @@ describe('IndexBuffer', () => {
       expect(ibo.length).toBe(6);
     });
 
-    it('uploads Uint32 indices', () => {
-      const indices = new Uint32Array([0, 1, 2, 1, 3, 2]);
+    it.each([
+      ['Uint32', new Uint32Array([0, 1, 2, 1, 3, 2]), 6],
+      ['Int8', new Int8Array([0, 1, 2]), 3],
+    ])('uploads %s indices', (_label, indices, expectedLength) => {
       ibo.setData(indices);
-
-      expect(ibo.length).toBe(6);
-    });
-
-    it('uploads Int8 indices', () => {
-      const indices = new Int8Array([0, 1, 2]);
-      ibo.setData(indices);
-
-      expect(ibo.length).toBe(3);
+      expect(ibo.length).toBe(expectedLength);
     });
 
     it('binds buffer to ELEMENT_ARRAY_BUFFER', () => {
@@ -176,22 +170,14 @@ describe('IndexBuffer', () => {
       expect(mockGL.deleteBuffer).toHaveBeenCalled();
     });
 
-    it('supports various index types', () => {
-      const ibo8 = new IndexBuffer(mockGLContext as GLContext);
-      const ibo16 = new IndexBuffer(mockGLContext as GLContext);
-      const ibo32 = new IndexBuffer(mockGLContext as GLContext);
-
-      // 8-bit indices
-      ibo8.setData(new Uint8Array([0, 1, 2]));
-      expect(ibo8.length).toBe(3);
-
-      // 16-bit indices
-      ibo16.setData(new Uint16Array([0, 1, 2, 65535]));
-      expect(ibo16.length).toBe(4);
-
-      // 32-bit indices
-      ibo32.setData(new Uint32Array([0, 1, 2, 4294967295]));
-      expect(ibo32.length).toBe(4);
+    it.each([
+      ['Uint8', new Uint8Array([0, 1, 2]), 3],
+      ['Uint16', new Uint16Array([0, 1, 2, 65535]), 4],
+      ['Uint32', new Uint32Array([0, 1, 2, 4294967295]), 4],
+    ])('supports %s index types', (_label, data, expectedLength) => {
+      const ibo = new IndexBuffer(mockGLContext as GLContext);
+      ibo.setData(data);
+      expect(ibo.length).toBe(expectedLength);
     });
   });
 });

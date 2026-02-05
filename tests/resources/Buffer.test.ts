@@ -180,8 +180,10 @@ describe('Buffer', () => {
       expect(buffer.length).toBe(6);
     });
 
-    it('uploads Uint16Array data', () => {
-      const data = new Uint16Array([0, 1, 2, 3]);
+    it.each([
+      ['Uint16Array', new Uint16Array([0, 1, 2, 3]), 4],
+      ['Uint32Array', new Uint32Array([0, 1, 2, 3, 4]), 5],
+    ])('uploads %s data', (_label, data, expectedLength) => {
       buffer.setData(data);
 
       expect(mockGL.bufferData).toHaveBeenCalledWith(
@@ -189,14 +191,7 @@ describe('Buffer', () => {
         data,
         BufferUsage.STATIC_DRAW,
       );
-      expect(buffer.length).toBe(4);
-    });
-
-    it('uploads Uint32Array data', () => {
-      const data = new Uint32Array([0, 1, 2, 3, 4]);
-      buffer.setData(data);
-
-      expect(buffer.length).toBe(5);
+      expect(buffer.length).toBe(expectedLength);
     });
 
     it('respects custom usage hint', () => {
