@@ -154,98 +154,35 @@ The following components have their architecture designed before implementation 
 - 🚧 **In Progress** - Currently being implemented on feature branch
 - ⏭️ **Not Started** - Scheduled for implementation
 
-### How to Approve/Request Changes
+### Feature Development Workflow
 
-When you see features marked as "🔍 Pending Approval", you can:
-
-1. **Approve for commit to main:**
-```
-   Looks good, commit this.
-```
-   I will then: merge feature branch → main, create commit, update CLAUDE.md
-
-2. **Request changes:**
-```
-   Please modify [feature] to [change]. Here's why: [reason].
-```
-   I will: make changes on same branch, push, and request re-review
-
-3. **Ask questions:**
-```
-   Can you explain [aspect]? I'm concerned about [specific thing].
-```
-   I will: explain or show relevant code sections before continuing
-
-4. **Reject and redo:**
-```
-   Let's redo this. Here's the issue: [explanation].
-```
-   I will: delete branch, start fresh with new approach after discussion
-
-Once approved, I'll merge to `main` with a detailed commit message and update CLAUDE.md to mark it as ✅ Complete.
-
-### How to Request Features
-
-When starting work on a new feature, follow this process:
-
-#### 1. **Initiate the Feature**
-Use the format:
+**Your Feature Request:**
 ```
 Let's implement [FEATURE_NAME].
-
-**Feature:** [Brief description]
-**File:** `src/[path]/[File].ts`
-**Key Requirements:**
-- [Requirement 1]
-- [Requirement 2]
-- [Requirement 3]
-
-Before I start, please review the approach and let me know if you have any feedback or changes needed.
+Requirements: [list key requirements]
+Approach: [brief approach if specific]
 ```
 
-#### 2. **Review & Approval**
-You review the approach and either:
-- ✅ Approve: "Looks good, proceed"
-- 💭 Request changes: Describe modifications
-- ❓ Ask questions: I clarify before proceeding
+**My Response:** Clarify approach → get your approval ("proceed") → implement
 
-#### 3. **Implementation**
-Once approved, I will:
-- Implement the feature following existing patterns
-- Write comprehensive tests (aiming for 95%+ line coverage, 90%+ branch coverage)
-- Verify all tests pass
-- Show you the results
+**Implementation:** I code + test (95%+ line/90%+ branch coverage) → verify all tests pass → report results
 
-#### 4. **Completion & Review**
-When feature is complete, I'll report:
+**My Completion Report:**
 ```
-**[FEATURE_NAME] Complete ✅**
+[FEATURE_NAME] Complete ✅
 
-**Implementation:**
-- [Key classes/methods]
-- [Important design decisions]
-- [Coverage metrics]
+Implementation: [key classes/methods, design decisions, coverage]
+Tests: X tests, Y% line / Z% branch coverage
+Project: N total tests passing, X% lines / Y% branch overall
 
-**Tests:**
-- X tests covering [key scenarios]
-- Y% line coverage / Z% branch coverage
-
-**Project Status:**
-- Total tests: N passing
-- Project coverage: X% lines / Y% branch
-
-Ready for review and feedback before proceeding to [NEXT_FEATURE].
+Ready for your review.
 ```
 
-#### 5. **Your Review**
-You can:
-- ✅ Approve for commit: "Looks good, commit this"
-- 💬 Request changes: "Please modify..."
-- 🚫 Reject: "Let's redo this, here's why..."
-- 💭 Ask questions: "Can you explain..."
-
-#### 6. **Commit**
-Once approved, I will commit with a detailed commit message.
+**Your Review Options:**
+- ✅ **Approve:** "Looks good" → you commit to main + update status
+- 💬 **Request changes:** "Modify X because Y" → I revise on same branch
+- 🚫 **Reject:** "Redo because X" → I start fresh after discussion
+- ❓ **Ask questions:** I explain implementation details
 
 ---
 
@@ -258,106 +195,20 @@ Once approved, I will commit with a detailed commit message.
 
 ### Code Patterns to Follow
 
-#### Instance vs Static Methods
-```typescript
-// Instance method (mutates this, returns this for chaining)
-multiply(other: Matrix4): this {
-  // Mutate this
-  return this;
-}
+**Method Chaining (all methods return `this` unless returning data)**
+- **Mutation methods:** Modify state, return `this` for chaining
+  - Example: `vector.normalize().add(other)` or `matrix.makeTranslation(1,2,3).multiply(other)`
+- **Query methods:** Return values (not `this`, breaks chain)
+  - Example: `vector.magnitude` returns number, `matrix.determinant` returns number
+- **Static methods:** Create new instances (don't mutate inputs)
+  - Example: `Vector3.add(v1, v2)` returns new Vector3, `Matrix4.multiply(m1, m2)` returns new Matrix4
 
-// Static method (creates new object, no mutation)
-static multiply(a: Matrix4, b: Matrix4): Matrix4 {
-  const result = a.clone();
-  result.multiply(b);
-  return result;
-}
-```
+**Constructors & Factories (both chainable)**
+- **Direct constructor:** `new GLContext(canvas).setSize(800, 600).setClearColor(...)`
+- **Factory method:** `GLContext.fromElementId('id').setSize(800, 600).setClearColor(...)`
+- Both paths create identical instances, fully chainable
 
-#### Constructors & Factory Methods
-
-**Constructors are implicitly chainable** (TypeScript returns the new instance):
-```typescript
-// Constructor: implicitly returns this (the new instance)
-const ctx = new GLContext(canvas)
-  .setSize(800, 600)
-  .setClearColor(0.1, 0.1, 0.1, 1.0);
-```
-
-**Factory methods should also be chainable** (return `this`):
-```typescript
-// Static factory method: creates instance + returns it for chaining
-const ctx = GLContext.fromElementId('canvas')
-  .setSize(800, 600)
-  .setClearColor(0.1, 0.1, 0.1, 1.0);
-
-// Instance method as alternative factory path:
-// (returns this, allowing immediate chaining)
-const ctx = new GLContext(canvas)
-  .withViewport(100, 100, 400, 300)
-  .setSize(800, 600);
-```
-
-**Constructor vs Factory Method Pattern:**
-- **Constructor:** Use when you already have the required object (e.g., HTMLCanvasElement)
-  ```typescript
-  const canvas = document.getElementById('my-canvas') as HTMLCanvasElement;
-  const ctx = new GLContext(canvas); // Direct path
-  ```
-
-- **Factory Methods:** Use for convenience initialization paths (e.g., element ID lookup)
-  ```typescript
-  const ctx = GLContext.fromElementId('my-canvas'); // Convenience path
-  ```
-
-- **Both paths:** Should create identical instances, both fully chainable with configuration methods
-
-#### Method Chaining & Builder Pattern
-```typescript
-// All configuration methods return this for chaining
-matrix.makeTranslation(1, 2, 3).multiply(other).invert();
-
-// Builder pattern: all setter methods are chainable
-// Allows flexible, readable fluent API
-const ctx = GLContext.fromElementId('canvas')
-  .setSize(800, 600)
-  .setClearColor(0.1, 0.1, 0.1, 1.0);
-
-// Methods can be called in any order when all are chainable
-ctx.setClearColor(0.5, 0.5, 0.5)
-   .setViewport(100, 100, 300, 200)
-   .setCanvasSize(1024, 768);
-```
-
-**Chainability Rule:**
-- Any method that modifies state should return `this` for chaining
-- Exception: Methods that return meaningful data (queries) return that data, not `this`
-- Constructor + chainable instance methods = flexible builder pattern
-
-**Three Categories of Methods:**
-
-1. **Mutation methods** (modify state) → return `this`:
-   ```typescript
-   vector.normalize().multiplyScalar(2).add(other);  // All return this
-   matrix.makeTranslation(1,2,3).multiply(other).invert();
-   quaternion.fromAxisAngle(axis, angle).normalize();
-   ```
-
-2. **Query methods** (return data) → return value, NOT `this`:
-   ```typescript
-   const magnitude = vector.magnitude;  // Returns number
-   const determinant = matrix.determinant;  // Returns number
-   const dotProduct = vector1.dot(vector2);  // Returns number
-   ```
-
-3. **Static/Factory methods** (create new instances) → return new instance:
-   ```typescript
-   const newVec = Vector3.add(v1, v2);  // Returns new Vector3
-   const newMat = Matrix4.multiply(m1, m2);  // Returns new Matrix4
-   const ctx = GLContext.fromElementId('canvas');  // Returns new GLContext
-   ```
-
-**Reference Implementation:** See math module classes (Vector3, Matrix4, Quaternion) for perfect adherence to this pattern.
+**Reference Implementation:** Matrix4.ts:265-280, Quaternion.ts:150-200, GLContext.ts:50-150
 
 #### Error Handling
 ```typescript
@@ -407,49 +258,15 @@ When implementing a feature, ensure:
 
 ## Test Organization
 
-### Test File Structure
-```typescript
-describe('ClassName', () => {
-  let instance: ClassName;
+**Structure:** `describe('ClassName')` → constructor tests → method tests → integration tests
+**Coverage Required:** 95%+ lines, 90%+ branches
+**Commands:**
+- All tests: `npm test`
+- Specific file: `npm test -- tests/path/to/File.test.ts`
+- Watch mode: `npm test -- --watch`
+- Coverage: `npm test -- --coverage`
 
-  beforeEach(() => {
-    // Setup
-  });
-
-  afterEach(() => {
-    // Cleanup
-  });
-
-  describe('constructor', () => {
-    it('creates instance with valid inputs', () => { });
-    it('throws error for invalid inputs', () => { });
-  });
-
-  describe('methods', () => {
-    it('performs expected operation', () => { });
-    it('handles edge cases', () => { });
-  });
-
-  describe('integration', () => {
-    it('completes workflow', () => { });
-  });
-});
-```
-
-### Running Tests
-```bash
-# Run all tests
-npm test
-
-# Run specific test file
-npm test -- tests/resources/Buffer.test.ts
-
-# Run with coverage
-npm test -- --coverage
-
-# Run in watch mode
-npm test -- --watch
-```
+**Reference:** tests/math/Matrix4.test.ts for comprehensive example pattern
 
 ---
 
@@ -539,11 +356,9 @@ ctx.gl.drawArrays(ctx.gl.TRIANGLES, 0, vertexCount);
   - Supports library developers extending the system
 - Don't add shader file loading or builder helpers until the Material System reveals what's needed (Phase 4+)
 
-**Benefits:**
-- Steep learning curve is reduced with high-level APIs
-- Advanced users have complete control when needed
-- Educational value: see exactly what's happening at each level
-- No "magic" that can't be understood or customized
+**Design Benefits:**
+- Progressive learning path: beginner APIs → intermediate customization → expert control
+- Educational transparency: see exactly what's happening at each tier, no "magic"
 
 ### Escape Hatches & Wrapper Purity
 
@@ -560,58 +375,42 @@ ctx.gl.drawArrays(ctx.gl.TRIANGLES, 0, vertexCount);
 - Trying to auto-sync caches leads to performance penalties and hidden side effects
 - Clear responsibility boundaries prevent subtle bugs
 
-**Examples:**
+**Usage Patterns:**
 
-✅ **Good: Pure wrapper usage**
+✅ **Pure wrapper** (recommended):
 ```typescript
-const buffer = new Buffer(ctx, BufferTarget.ARRAY_BUFFER);
-buffer.setData(new Float32Array([1, 2, 3]));
-console.log(buffer.byteLength); // 12 - accurate
-buffer.updateData(0, new Float32Array([4, 5])); // Synchronized
+buffer.setData(data: TypedArray): this
+buffer.updateData(offset: number, data: TypedArray): this
+buffer.byteLength  // Wrapper tracks state automatically
 ```
 
-✅ **Good: Pure raw GL usage**
+✅ **Pure raw GL** (you manage all state):
 ```typescript
-const buffer = new Buffer(ctx, BufferTarget.ARRAY_BUFFER);
-// Skip wrapper methods, use raw GL entirely
-ctx.gl.bindBuffer(BufferTarget.ARRAY_BUFFER, buffer.buffer);
-ctx.gl.bufferData(BufferTarget.ARRAY_BUFFER, new Float32Array([1, 2, 3]), ctx.gl.STATIC_DRAW);
-// You manage state yourself
+ctx.gl.bindBuffer(target, buffer.buffer)
+ctx.gl.bufferData(target, data, usage)
+// Wrapper properties (byteLength, length) now stale - your responsibility
 ```
 
-❌ **Bad: Mixing without sync**
+❌ **Mixing without sync** (causes bugs):
 ```typescript
-const buffer = new Buffer(ctx, BufferTarget.ARRAY_BUFFER);
-buffer.setData(new Float32Array([1, 2, 3])); // Wrapper says: length=3, byteLength=12
-
-// Raw GL call changes buffer size
-ctx.gl.bindBuffer(BufferTarget.ARRAY_BUFFER, buffer.buffer);
-ctx.gl.bufferData(BufferTarget.ARRAY_BUFFER, new Uint8Array([1, 2]), ctx.gl.STATIC_DRAW);
-
-console.log(buffer.byteLength); // Still returns 12, but GPU has 2 bytes!
+buffer.setData(new Float32Array([1, 2, 3]));  // Wrapper: byteLength=12
+ctx.gl.bufferData(..., new Uint8Array([1, 2]), ...);  // GPU: 2 bytes, but wrapper still thinks 12
+console.log(buffer.byteLength);  // Returns 12 (wrong!)
 ```
 
-✅ **Good: Mixing with explicit sync**
+✅ **Mixing with explicit sync** (advanced):
 ```typescript
-const buffer = new Buffer(ctx, BufferTarget.ARRAY_BUFFER);
-buffer.setData(new Float32Array([1, 2, 3])); // Wrapper: length=3, elementByteSize=4
-
-// Raw GL call changes buffer
-ctx.gl.bindBuffer(BufferTarget.ARRAY_BUFFER, buffer.buffer);
-ctx.gl.bufferData(BufferTarget.ARRAY_BUFFER, new Uint8Array([1, 2]), ctx.gl.STATIC_DRAW);
-
-// Explicitly sync wrapper state
-buffer.setMetadata(2, 1); // Tell wrapper: 2 elements, 1 byte each
-
-console.log(buffer.byteLength); // Now correctly returns 2
+buffer.setData(new Float32Array([1, 2, 3]));  // Wrapper state synced
+ctx.gl.bufferData(..., new Uint8Array([1, 2]), ...);  // Raw GL changes state
+buffer.setMetadata(length: number, elementByteSize: number): void  // Explicitly resync
+console.log(buffer.byteLength);  // Now correct
 ```
 
-**Benefits:**
-- No hidden performance penalties (no automatic GPU queries)
-- No unexpected side effects (no binding state mutations)
-- Clear intent and responsibility
-- Easier to debug and reason about
-- Educational value: users understand the boundary between abstractions
+**Reference:** Buffer.ts:692-711 for `setMetadata()` signature and validation
+
+**Wrapper Benefits:**
+- No hidden costs: explicit state management, no automatic GPU queries
+- Clear boundaries: wrapper vs raw GL (user's responsibility to sync if mixing)
 
 ---
 
