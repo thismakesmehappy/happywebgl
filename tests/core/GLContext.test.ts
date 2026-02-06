@@ -1766,17 +1766,17 @@ describe('GLContext', () => {
         );
 
         expect(mockGL.bindTexture).toHaveBeenCalledWith(mockGL.TEXTURE_2D, texture);
-        expect(mockGL.texImage2D).toHaveBeenCalledWith(
-          mockGL.TEXTURE_2D,
-          0,
-          RGBA,
-          256,
-          256,
-          0,
-          RGBA,
-          UNSIGNED_BYTE,
-          imageData,
-        );
+        const call = mockGL.texImage2D?.mock.calls[0];
+        expect(call).toBeDefined();
+        expect(call?.[0]).toBe(mockGL.TEXTURE_2D);
+        expect(call?.[1]).toBe(0);
+        expect(call?.[2]).toBe(RGBA);
+        expect(call?.[3]).toBe(256);
+        expect(call?.[4]).toBe(256);
+        expect(call?.[5]).toBe(0);
+        expect(call?.[6]).toBe(RGBA);
+        expect(call?.[7]).toBe(UNSIGNED_BYTE);
+        expect(call?.[8]).toBe(imageData);
         expect(mockGL.bindTexture).toHaveBeenCalledWith(mockGL.TEXTURE_2D, null);
       });
 

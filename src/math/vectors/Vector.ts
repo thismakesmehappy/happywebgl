@@ -29,6 +29,9 @@
  * - Attempting operations between different-sized vectors will throw an error
  * - This ensures type safety and prevents dimension mismatches
  */
+import { AppError } from '../../errors/AppError.js';
+import { ErrorCode } from '../../errors/ErrorCodes.js';
+
 export abstract class Vector {
   /**
    * Vector components stored as Float32Array for WebGL compatibility and performance
@@ -87,7 +90,11 @@ export abstract class Vector {
   get(index: number): number | undefined {
     this._validateIndex(index);
     if (index < 0 || index >= this._components.length) {
-      throw new Error('Index out of bounds');
+      throw new AppError(ErrorCode.MATH_OUT_OF_BOUNDS, {
+        resource: 'Vector',
+        method: 'get',
+        detail: 'Index out of bounds',
+      });
     }
 
     return this._components[index];
@@ -299,7 +306,11 @@ export abstract class Vector {
    */
   divideScalar(scalar: number): this {
     if (scalar === 0) {
-      throw new Error('Cannot divide vector by zero');
+      throw new AppError(ErrorCode.MATH_DIVIDE_BY_ZERO, {
+        resource: 'Vector',
+        method: 'divideScalar',
+        detail: 'Cannot divide vector by zero',
+      });
     }
     return this.multiplyScalar(1 / scalar);
   }
@@ -319,7 +330,11 @@ export abstract class Vector {
    */
   static divideScalar<T extends Vector>(v: T, scalar: number): T {
     if (scalar === 0) {
-      throw new Error('Cannot divide vector by zero');
+      throw new AppError(ErrorCode.MATH_DIVIDE_BY_ZERO, {
+        resource: 'Vector',
+        method: 'divideScalar',
+        detail: 'Cannot divide vector by zero',
+      });
     }
     return Vector.multiplyScalar(v, 1 / scalar);
   }
@@ -628,7 +643,11 @@ export abstract class Vector {
 
   private _validateIndex(index: number): void {
     if (!this._isWithinBounds(index)) {
-      throw new Error(`Index out of bounds for ${this.constructor.name} of size ${this._components.length}`);
+      throw new AppError(ErrorCode.MATH_OUT_OF_BOUNDS, {
+        resource: 'Vector',
+        method: '_validateIndex',
+        detail: `Index out of bounds for ${this.constructor.name} of size ${this._components.length}`,
+      });
     }
   }
 
@@ -646,9 +665,13 @@ export abstract class Vector {
    */
   protected _validateSameSize(a: Vector, b: Vector): void {
     if (!this._areSameSize(a, b)) {
-      throw new Error(
-        `Vectors must have the same size: ${a.constructor.name} (size ${a.size}) and ${b.constructor.name} (size ${b.size})`
-      );
+      throw new AppError(ErrorCode.MATH_INVALID_ARG, {
+        resource: 'Vector',
+        method: '_validateSameSize',
+        detail:
+          `Vectors must have the same size: ${a.constructor.name} (size ${a.size}) and ` +
+          `${b.constructor.name} (size ${b.size})`,
+      });
     }
   }
 
@@ -660,9 +683,11 @@ export abstract class Vector {
   protected _validateFinite(methodName: string): void {
     if (!this.isFinite()) {
       const nonFinite = this._components.filter(c => !Number.isFinite(c));
-      throw new Error(
-        `${methodName}(): vector contains non-finite values (${nonFinite.join(', ')})`
-      );
+      throw new AppError(ErrorCode.MATH_INVALID_ARG, {
+        resource: 'Vector',
+        method: methodName,
+        detail: `vector contains non-finite values (${nonFinite.join(', ')})`,
+      });
     }
   }
 

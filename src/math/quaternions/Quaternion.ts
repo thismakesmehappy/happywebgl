@@ -1,6 +1,8 @@
 import { Vector3 } from '../vectors/Vector3.js';
 import { Matrix3 } from '../matrices/Matrix3.js';
 import { Matrix4 } from '../matrices/Matrix4.js';
+import { AppError } from '../../errors/AppError.js';
+import { ErrorCode } from '../../errors/ErrorCodes.js';
 
 /**
  * Quaternion - A quaternion class for 3D rotations
@@ -294,7 +296,11 @@ export class Quaternion {
   inverse(): this {
     const lenSq = this.lengthSquared();
     if (lenSq === 0) {
-      throw new Error('Cannot invert zero quaternion');
+      throw new AppError(ErrorCode.MATH_NON_INVERTIBLE, {
+        resource: 'Quaternion',
+        method: 'inverse',
+        detail: 'Cannot invert zero quaternion',
+      });
     }
     const invLenSq = 1 / lenSq;
     this._elements[0] = this._elements[0]! * -invLenSq;
@@ -318,7 +324,11 @@ export class Quaternion {
   static inverse(q: Quaternion): Quaternion {
     const lenSq = q.lengthSquared();
     if (lenSq === 0) {
-      throw new Error('Cannot invert zero quaternion');
+      throw new AppError(ErrorCode.MATH_NON_INVERTIBLE, {
+        resource: 'Quaternion',
+        method: 'inverse',
+        detail: 'Cannot invert zero quaternion',
+      });
     }
     const invLenSq = 1 / lenSq;
     return new Quaternion(
@@ -544,7 +554,11 @@ export class Quaternion {
    */
   equalsEpsilon(q: Quaternion, epsilon: number = 1e-6): boolean {
     if (epsilon < 0) {
-      throw new Error('Epsilon must be non-negative');
+      throw new AppError(ErrorCode.MATH_INVALID_ARG, {
+        resource: 'Quaternion',
+        method: 'equalsEpsilon',
+        detail: 'Epsilon must be non-negative',
+      });
     }
     return (
       Math.abs(this._elements[0]! - q._elements[0]!) <= epsilon &&

@@ -2,6 +2,8 @@ import { Matrix } from './Matrix.js';
 import { SquareMatrix } from './SquareMatrix.js';
 import { Vector3 } from '../vectors/Vector3.js';
 import { Vector4 } from '../vectors/Vector4.js';
+import { AppError } from '../../errors/AppError.js';
+import { ErrorCode } from '../../errors/ErrorCodes.js';
 
 /**
  * Matrix4 - A 4x4 matrix class
@@ -136,17 +138,22 @@ export class Matrix4 extends SquareMatrix {
   multiplyMatrices(a: Matrix, b: Matrix): this {
     // Validate: a.columns === b.rows (compatibility)
     if (a.columns !== b.rows) {
-      throw new Error(
-        `Matrix multiplication incompatible: ${a.rows}x${a.columns} * ${b.rows}x${b.columns}`
-      );
+      throw new AppError(ErrorCode.MATH_INVALID_ARG, {
+        resource: 'Matrix4',
+        method: 'multiplyMatrices',
+        detail: `Matrix multiplication incompatible: ${a.rows}x${a.columns} * ${b.rows}x${b.columns}`,
+      });
     }
     
     // Validate: result size matches this matrix (must be 4x4)
     if (this.rows !== a.rows || this.columns !== b.columns) {
-      throw new Error(
-        `Result matrix size mismatch: expected ${a.rows}x${b.columns}, ` +
-        `got ${this.rows}x${this.columns}`
-      );
+      throw new AppError(ErrorCode.MATH_INVALID_ARG, {
+        resource: 'Matrix4',
+        method: 'multiplyMatrices',
+        detail:
+          `Result matrix size mismatch: expected ${a.rows}x${b.columns}, ` +
+          `got ${this.rows}x${this.columns}`,
+      });
     }
     
     // If both inputs are 4x4, use optimized implementation
@@ -329,7 +336,11 @@ export class Matrix4 extends SquareMatrix {
    */
   static getInverse(m: Matrix4): Matrix4 {
     if (!(m instanceof Matrix4)) {
-      throw new Error('Matrix4.getInverse requires Matrix4 instance');
+      throw new AppError(ErrorCode.MATH_INVALID_ARG, {
+        resource: 'Matrix4',
+        method: 'getInverse',
+        detail: 'Matrix4.getInverse requires Matrix4 instance',
+      });
     }
     const te = m._elements;
     const n11 = te[0]!, n12 = te[4]!, n13 = te[8]!, n14 = te[12]!;
@@ -345,7 +356,11 @@ export class Matrix4 extends SquareMatrix {
     const det = n11 * t11 + n21 * t12 + n31 * t13 + n41 * t14;
 
     if (det === 0) {
-      throw new Error('Matrix4.getInverse(): Matrix is not invertible (determinant is 0)');
+      throw new AppError(ErrorCode.MATH_NON_INVERTIBLE, {
+        resource: 'Matrix4',
+        method: 'getInverse',
+        detail: 'Matrix4.getInverse(): Matrix is not invertible (determinant is 0)',
+      });
     }
 
     const detInv = 1 / det;

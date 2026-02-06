@@ -32,6 +32,8 @@
 
 import { WebGLState } from './WebGLState.js';
 import type { Canvas } from './Canvas.js';
+import { AppError } from '../errors/AppError.js';
+import { ErrorCode } from '../errors/ErrorCodes.js';
 
 export class GLContext {
   /**
@@ -138,14 +140,18 @@ export class GLContext {
   ): GLContext {
     const canvas = document.getElementById(canvasId) as HTMLCanvasElement | null;
     if (!canvas) {
-      throw new Error(
-        `Canvas element with ID "${canvasId}" not found in the DOM.`,
-      );
+      throw new AppError(ErrorCode.CORE_NOT_FOUND, {
+        resource: 'GLContext',
+        method: 'fromElementId',
+        detail: `Canvas element with ID "${canvasId}" not found in the DOM.`,
+      });
     }
     if (!(canvas instanceof HTMLCanvasElement)) {
-      throw new Error(
-        `Element with ID "${canvasId}" is not an HTMLCanvasElement.`,
-      );
+      throw new AppError(ErrorCode.CORE_INVALID_ARG, {
+        resource: 'GLContext',
+        method: 'fromElementId',
+        detail: `Element with ID "${canvasId}" is not an HTMLCanvasElement.`,
+      });
     }
     return new GLContext(canvas, options);
   }
@@ -203,21 +209,30 @@ export class GLContext {
       // Element ID string - look up in DOM
       const element = document.getElementById(canvasOrElement);
       if (!element) {
-        throw new Error(`Canvas element with ID "${canvasOrElement}" not found in the DOM.`);
+        throw new AppError(ErrorCode.CORE_NOT_FOUND, {
+          resource: 'GLContext',
+          method: 'constructor',
+          detail: `Canvas element with ID "${canvasOrElement}" not found in the DOM.`,
+        });
       }
       if (!(element instanceof HTMLCanvasElement)) {
-        throw new Error(
-          `Element with ID "${canvasOrElement}" is not an HTMLCanvasElement.`,
-        );
+        throw new AppError(ErrorCode.CORE_INVALID_ARG, {
+          resource: 'GLContext',
+          method: 'constructor',
+          detail: `Element with ID "${canvasOrElement}" is not an HTMLCanvasElement.`,
+        });
       }
       canvas = element;
     } else {
       // Canvas object - extract .element property
       const elem = (canvasOrElement as Canvas).element;
       if (!(elem instanceof HTMLCanvasElement)) {
-        throw new Error(
-          'Canvas object must have an .element property that is an HTMLCanvasElement.',
-        );
+        throw new AppError(ErrorCode.CORE_INVALID_ARG, {
+          resource: 'GLContext',
+          method: 'constructor',
+          detail:
+            'Canvas object must have an .element property that is an HTMLCanvasElement.',
+        });
       }
       canvas = elem;
     }
@@ -235,9 +250,12 @@ export class GLContext {
     }) as WebGL2RenderingContext | null;
 
     if (!gl) {
-      throw new Error(
-        'WebGL 2.0 is not supported on this browser. Please use a modern browser with WebGL 2.0 support.',
-      );
+      throw new AppError(ErrorCode.CORE_WEBGL_FAILURE, {
+        resource: 'GLContext',
+        method: 'constructor',
+        detail:
+          'WebGL 2.0 is not supported on this browser. Please use a modern browser with WebGL 2.0 support.',
+      });
     }
 
     this._gl = gl;
@@ -582,7 +600,11 @@ export class GLContext {
     // Compile vertex shader
     const vertexShader = this._gl.createShader(this._gl.VERTEX_SHADER);
     if (!vertexShader) {
-      throw new Error('Failed to create vertex shader');
+      throw new AppError(ErrorCode.CORE_WEBGL_FAILURE, {
+        resource: 'GLContext',
+        method: 'createProgram',
+        detail: 'Failed to create vertex shader',
+      });
     }
 
     this._gl.shaderSource(vertexShader, vertexShaderSource);
@@ -591,14 +613,22 @@ export class GLContext {
     if (!this._gl.getShaderParameter(vertexShader, this._gl.COMPILE_STATUS)) {
       const error = this._gl.getShaderInfoLog(vertexShader);
       this._gl.deleteShader(vertexShader);
-      throw new Error(`Vertex shader compilation failed:\n${error}`);
+      throw new AppError(ErrorCode.CORE_WEBGL_FAILURE, {
+        resource: 'GLContext',
+        method: 'createProgram',
+        detail: `Vertex shader compilation failed:\n${error}`,
+      });
     }
 
     // Compile fragment shader
     const fragmentShader = this._gl.createShader(this._gl.FRAGMENT_SHADER);
     if (!fragmentShader) {
       this._gl.deleteShader(vertexShader);
-      throw new Error('Failed to create fragment shader');
+      throw new AppError(ErrorCode.CORE_WEBGL_FAILURE, {
+        resource: 'GLContext',
+        method: 'createProgram',
+        detail: 'Failed to create fragment shader',
+      });
     }
 
     this._gl.shaderSource(fragmentShader, fragmentShaderSource);
@@ -608,7 +638,11 @@ export class GLContext {
       const error = this._gl.getShaderInfoLog(fragmentShader);
       this._gl.deleteShader(vertexShader);
       this._gl.deleteShader(fragmentShader);
-      throw new Error(`Fragment shader compilation failed:\n${error}`);
+      throw new AppError(ErrorCode.CORE_WEBGL_FAILURE, {
+        resource: 'GLContext',
+        method: 'createProgram',
+        detail: `Fragment shader compilation failed:\n${error}`,
+      });
     }
 
     // Link program
@@ -616,7 +650,11 @@ export class GLContext {
     if (!program) {
       this._gl.deleteShader(vertexShader);
       this._gl.deleteShader(fragmentShader);
-      throw new Error('Failed to create program');
+      throw new AppError(ErrorCode.CORE_WEBGL_FAILURE, {
+        resource: 'GLContext',
+        method: 'createProgram',
+        detail: 'Failed to create program',
+      });
     }
 
     this._gl.attachShader(program, vertexShader);
@@ -628,7 +666,11 @@ export class GLContext {
       this._gl.deleteProgram(program);
       this._gl.deleteShader(vertexShader);
       this._gl.deleteShader(fragmentShader);
-      throw new Error(`Program linking failed:\n${error}`);
+      throw new AppError(ErrorCode.CORE_WEBGL_FAILURE, {
+        resource: 'GLContext',
+        method: 'createProgram',
+        detail: `Program linking failed:\n${error}`,
+      });
     }
 
     // Clean up shaders (they're linked into program)
@@ -657,7 +699,11 @@ export class GLContext {
   createBuffer(): WebGLBuffer {
     const buffer = this._gl.createBuffer();
     if (!buffer) {
-      throw new Error('Failed to create WebGL buffer');
+      throw new AppError(ErrorCode.CORE_WEBGL_FAILURE, {
+        resource: 'GLContext',
+        method: 'createBuffer',
+        detail: 'Failed to create WebGL buffer',
+      });
     }
 
     this._buffers.add(buffer);
@@ -776,7 +822,11 @@ export class GLContext {
   createTexture(): WebGLTexture {
     const texture = this._gl.createTexture();
     if (!texture) {
-      throw new Error('Failed to create WebGL texture');
+      throw new AppError(ErrorCode.CORE_WEBGL_FAILURE, {
+        resource: 'GLContext',
+        method: 'createTexture',
+        detail: 'Failed to create WebGL texture',
+      });
     }
 
     this._textures.add(texture);
@@ -1134,7 +1184,11 @@ export class GLContext {
   createVertexArray(): WebGLVertexArrayObject {
     const vao = this._gl.createVertexArray();
     if (!vao) {
-      throw new Error('Failed to create vertex array object');
+      throw new AppError(ErrorCode.CORE_WEBGL_FAILURE, {
+        resource: 'GLContext',
+        method: 'createVertexArray',
+        detail: 'Failed to create vertex array object',
+      });
     }
 
     this._vertexArrays.add(vao);

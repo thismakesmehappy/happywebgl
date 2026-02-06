@@ -8,6 +8,8 @@
  */
 
 import { GLContext } from '../../core/GLContext';
+import { AppError } from '../../errors/AppError.js';
+import { ErrorCode } from '../../errors/ErrorCodes.js';
 import { Buffer, BufferTarget, BufferUsage } from './Buffer.js';
 
 /**
@@ -54,9 +56,11 @@ export class VertexBuffer extends Buffer {
     usage: BufferUsage = BufferUsage.STATIC_DRAW,
   ) {
     if (!Number.isInteger(componentSize) || componentSize < 1 || componentSize > 4) {
-      throw new Error(
-        `VertexBuffer: componentSize must be 1, 2, 3, or 4, got ${componentSize}`,
-      );
+      throw new AppError(ErrorCode.RES_INVALID_ARG, {
+        resource: 'VertexBuffer',
+        method: 'constructor',
+        detail: `componentSize must be 1, 2, 3, or 4, got ${componentSize}`,
+      });
     }
 
     // Initialize parent with ARRAY_BUFFER target
@@ -94,9 +98,11 @@ export class VertexBuffer extends Buffer {
    */
   setComponentSize(componentSize: number): this {
     if (!Number.isInteger(componentSize) || componentSize < 1 || componentSize > 4) {
-      throw new Error(
-        `VertexBuffer.setComponentSize: componentSize must be 1, 2, 3, or 4, got ${componentSize}`,
-      );
+      throw new AppError(ErrorCode.RES_INVALID_ARG, {
+        resource: 'VertexBuffer',
+        method: 'setComponentSize',
+        detail: `componentSize must be 1, 2, 3, or 4, got ${componentSize}`,
+      });
     }
 
     this._componentSize = componentSize;

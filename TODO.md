@@ -1,7 +1,7 @@
 # WebGL Graphics Library - Cumulative TODO
 
-**Last Updated:** February 4, 2026
-**Status:** Phase 1 Implementation - 50% Complete
+**Last Updated:** February 6, 2026
+**Status:** Phase 1 Implementation - 75% Complete
 
 > **Note:** This is a cumulative TODO list tracking all phases. It evolves as we progress through development, allowing retroactive updates as learning occurs. See `ARCHITECTURE.md` for design rationale and `PLAN.md` for complete roadmap.
 
@@ -9,7 +9,7 @@
 
 ## Phase 1: Core MVP [ACTIVE]
 
-### Layer 1: Low-Level APIs ✅ (95% Complete)
+### Layer 1: Low-Level APIs ✅ (100% Complete)
 
 - [x] `src/core/GLContext.ts` - WebGL 2.0 wrapper with error handling (98.19% coverage)
 - [x] `src/core/WebGLState.ts` - Comprehensive state management (100% coverage)
@@ -18,32 +18,32 @@
 
 **Status:** Production-quality foundation ready for Layer 2 resources
 
-### Layer 2: GPU Resources 🚧 (50% Complete)
+### Layer 2: GPU Resources ✅ (100% Complete)
 
 - [x] `src/resources/Buffer.ts` - Vertex/Index buffer abstraction (98.38% coverage)
 - [x] `src/resources/Program.ts` - Shader compilation and linking (100% coverage) ✅
-- [ ] `src/resources/VertexArray.ts` - VAO abstraction (WebGL 2) [NEXT]
-- [ ] `src/resources/Texture.ts` - Texture resource wrapper
+- [x] `src/resources/VertexArray.ts` - VAO abstraction (WebGL 2) (100% coverage)
+- [x] `src/resources/Texture.ts` - Texture resource wrapper (99% coverage)
 
-**Status:** Buffer and Program complete. VertexArray is next, then Texture.
+**Status:** All Layer 2 GPU resources complete.
 
-### Layer 2.5: Shader Wrapper ⏳ (0% Complete)
+### Layer 2.5: Shader Wrapper 🚧 (Stub Created)
 
-- [ ] `src/resources/Shader.ts` - User-facing wrapper around Program [BLOCKED: waiting for Program approval]
+- [ ] `src/resources/Shader.ts` - User-facing wrapper around Program [NEXT]
   - Phase 1: Thin wrapper delegating to Program
   - Phase 4+: Reserves space for utilities (load, validate, cache)
 
-**Status:** Specification complete, blocked until Program and VertexArray ready
+**Status:** Stub created, ready for implementation
 
-### Layer 3: High-Level Concepts ⏳ (0% Complete)
+### Layer 3: High-Level Concepts 🚧 (Stubs Created)
 
-- [ ] `src/geometry/Geometry.ts` - Base geometry class [BLOCKED: needs VertexArray + Shader]
+- [ ] `src/geometry/Geometry.ts` - Base geometry class [BLOCKED: needs Shader]
 - [ ] `src/materials/Material.ts` - Material system using Design A [BLOCKED: needs Shader]
   - Material = Shader + Uniforms (each material has own shader)
   - Use Design A as documented in ARCHITECTURE.md
 - [ ] `src/materials/BasicMaterial.ts` - Default material with flat color [BLOCKED: needs Material]
 
-**Status:** Design finalized (Design A), specification complete, blocked on Layer 2.5
+**Status:** Stubs created, blocked on Layer 2.5
 
 ### Layer 4: Scene Graph ⏳ (0% Complete)
 
@@ -291,7 +291,8 @@
 - [x] Phase 0: Math library - 99.11% lines / 94.78% branch coverage ✅
 - [x] Phase 1: Layer 1 (GLContext, WebGLState, Canvas) - 99.05% coverage ✅
 - [x] Phase 1: Layer 2 (Buffer, Program) - 100% coverage ✅
-- [ ] Phase 1: Layer 2 (VertexArray, Texture) - Not yet implemented
+- [x] Phase 1: Layer 2 (VertexArray) - 100% coverage ✅
+- [x] Phase 1: Layer 2 (Textures) - 99.57% lines / 96.15% branch coverage ✅
 - [ ] Phase 1-10: Add integration tests for rendering pipeline
 - [ ] Performance benchmarks for rendering operations
 
@@ -327,29 +328,26 @@
 
 ## Critical Path to Phase 1 Completion
 
-**Current Status:** Layer 1 complete (95%), Layer 2 partially complete (50%)
+**Current Status:** Layer 1-2 complete (100%), Layer 2.5-3 stubs created
 
 **Blocking Items:**
-1. VertexArray.ts - Ready to implement [NEXT]
-2. Texture.ts - Ready to implement
-3. Shader.ts - Blocked until VertexArray ready
-4. Geometry.ts - Blocked until VertexArray + Shader ready
-5. Material.ts - Blocked until Shader ready
-6. Scene Graph - Blocked until Material ready
-7. WebGLRenderer - Blocked until Scene Graph ready
+1. Shader.ts - Stub created [NEXT]
+2. Geometry.ts - Stub created, blocked on Shader
+3. Material.ts - Stub created, blocked on Shader
+4. BasicMaterial.ts - Stub created, blocked on Material
+5. Scene Graph - Blocked until Material ready
+6. WebGLRenderer - Blocked until Scene Graph ready
 
 **Next Steps (in order):**
-1. Implement VertexArray.ts
-2. Implement Texture.ts
-3. Implement Shader.ts
-4. Implement Geometry.ts
-5. Implement Material.ts
-6. Implement BasicMaterial.ts
-7. Implement Object3D, Scene, Mesh
-8. Implement WebGLRenderer
-9. Create Phase 1 demo
+1. Implement Shader.ts
+2. Implement Geometry.ts
+3. Implement Material.ts
+4. Implement BasicMaterial.ts
+5. Implement Object3D, Scene, Mesh
+6. Implement WebGLRenderer
+7. Create Phase 1 demo
 
-**Estimated Total Phase 1 Remaining:** ~1800 lines of code
+**Estimated Total Phase 1 Remaining:** ~1200 lines of code
 
 ---
 
@@ -361,10 +359,10 @@
   - OutputTarget abstraction included in Phase 1 (not deferred to Phase 9)
   - Program wraps shader source strings (not Shader objects)
 
-- **Phase 1 50% Complete:**
-  - Layer 1: 95% done (4/4 components)
-  - Layer 2: 50% done (2/4 components - Buffer ✅, Program ✅)
-  - Layer 2.5-4: Not yet started (blocked on Layer 2)
+- **Phase 1 75% Complete:**
+  - Layer 1: 100% done (4/4 components)
+  - Layer 2: 100% done (4/4 components - Buffer ✅, Program ✅, VertexArray ✅, Textures ✅)
+  - Layer 2.5-3: Stubs created, ready for implementation
 
 - **For detailed architecture rationale:** See `ARCHITECTURE.md`
 - **For complete development plan:** See `PLAN.md`

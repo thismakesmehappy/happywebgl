@@ -64,6 +64,8 @@ import {
   NON_BINARY_CAPABILITIES,
   STATE_PARAMETERS,
 } from './WebGLState.constants.js';
+import { AppError } from '../errors/AppError.js';
+import { ErrorCode } from '../errors/ErrorCodes.js';
 
 export class WebGLState {
   /**
@@ -135,9 +137,11 @@ export class WebGLState {
   enableCapability(name: string): void {
     // Validate the capability name
     if (!BINARY_CAPABILITIES.includes(name as any)) {
-      throw new Error(
-        `Invalid binary capability: '${name}'. Must be one of: ${BINARY_CAPABILITIES.join(', ')}`,
-      );
+      throw new AppError(ErrorCode.CORE_INVALID_ARG, {
+        resource: 'WebGLState',
+        method: 'enableCapability',
+        detail: `Invalid binary capability: '${name}'. Must be one of: ${BINARY_CAPABILITIES.join(', ')}`,
+      });
     }
 
     // Check if already enabled (redundancy detection)
@@ -170,9 +174,11 @@ export class WebGLState {
   disableCapability(name: string): void {
     // Validate the capability name
     if (!BINARY_CAPABILITIES.includes(name as any)) {
-      throw new Error(
-        `Invalid binary capability: '${name}'. Must be one of: ${BINARY_CAPABILITIES.join(', ')}`,
-      );
+      throw new AppError(ErrorCode.CORE_INVALID_ARG, {
+        resource: 'WebGLState',
+        method: 'disableCapability',
+        detail: `Invalid binary capability: '${name}'. Must be one of: ${BINARY_CAPABILITIES.join(', ')}`,
+      });
     }
 
     // Check if already disabled (redundancy detection)
@@ -475,9 +481,11 @@ export class WebGLState {
   setCapability(name: string, value: GLenum): void {
     // Validate the capability name
     if (!Object.prototype.hasOwnProperty.call(NON_BINARY_CAPABILITIES, name)) {
-      throw new Error(
-        `Invalid non-binary capability: '${name}'. Must be one of: ${Object.keys(NON_BINARY_CAPABILITIES).join(', ')}`,
-      );
+      throw new AppError(ErrorCode.CORE_INVALID_ARG, {
+        resource: 'WebGLState',
+        method: 'setCapability',
+        detail: `Invalid non-binary capability: '${name}'. Must be one of: ${Object.keys(NON_BINARY_CAPABILITIES).join(', ')}`,
+      });
     }
 
     // Check for redundancy (already set to this value)
@@ -499,9 +507,11 @@ export class WebGLState {
       | undefined;
 
     if (!setter || typeof setter !== 'function') {
-      throw new Error(
-        `Setter function '${setterName}' not found on WebGL context`,
-      );
+      throw new AppError(ErrorCode.CORE_STATE_ERROR, {
+        resource: 'WebGLState',
+        method: 'setCapability',
+        detail: `Setter function '${setterName}' not found on WebGL context`,
+      });
     }
 
     setter.call(this._gl, value);
@@ -614,9 +624,11 @@ export class WebGLState {
   setParameter(name: string, ...args: any[]): void {
     // Validate the parameter name
     if (!STATE_PARAMETERS.includes(name as any)) {
-      throw new Error(
-        `Invalid state parameter: '${name}'. Must be one of: ${STATE_PARAMETERS.join(', ')}`,
-      );
+      throw new AppError(ErrorCode.CORE_INVALID_ARG, {
+        resource: 'WebGLState',
+        method: 'setParameter',
+        detail: `Invalid state parameter: '${name}'. Must be one of: ${STATE_PARAMETERS.join(', ')}`,
+      });
     }
 
     // Check for redundancy (already set with these exact arguments)
@@ -635,7 +647,11 @@ export class WebGLState {
       | undefined;
 
     if (!fn || typeof fn !== 'function') {
-      throw new Error(`Parameter function '${name}' not found on WebGL context`);
+      throw new AppError(ErrorCode.CORE_STATE_ERROR, {
+        resource: 'WebGLState',
+        method: 'setParameter',
+        detail: `Parameter function '${name}' not found on WebGL context`,
+      });
     }
 
     // Call the function with provided arguments

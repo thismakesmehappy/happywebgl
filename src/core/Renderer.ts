@@ -11,6 +11,8 @@
  */
 
 import { GLContext } from './GLContext.js';
+import { AppError } from '../errors/AppError.js';
+import { ErrorCode } from '../errors/ErrorCodes.js';
 
 /**
  * Base renderer class providing common rendering interface
@@ -163,14 +165,18 @@ export abstract class Renderer {
    */
   protected _validateDimensions(width: number, height: number): void {
     if (!Number.isFinite(width) || width <= 0) {
-      throw new Error(
-        `Invalid width: ${width}. Width must be a positive number.`,
-      );
+      throw new AppError(ErrorCode.CORE_INVALID_ARG, {
+        resource: 'Renderer',
+        method: '_validateDimensions',
+        detail: `Invalid width: ${width}. Width must be a positive number.`,
+      });
     }
     if (!Number.isFinite(height) || height <= 0) {
-      throw new Error(
-        `Invalid height: ${height}. Height must be a positive number.`,
-      );
+      throw new AppError(ErrorCode.CORE_INVALID_ARG, {
+        resource: 'Renderer',
+        method: '_validateDimensions',
+        detail: `Invalid height: ${height}. Height must be a positive number.`,
+      });
     }
   }
 
@@ -189,9 +195,11 @@ export abstract class Renderer {
     const colors = { r, g, b, a };
     for (const [name, value] of Object.entries(colors)) {
       if (!Number.isFinite(value) || value < 0 || value > 1) {
-        throw new Error(
-          `Invalid color component ${name}: ${value}. Must be between 0 and 1.`,
-        );
+        throw new AppError(ErrorCode.CORE_INVALID_ARG, {
+          resource: 'Renderer',
+          method: '_validateColor',
+          detail: `Invalid color component ${name}: ${value}. Must be between 0 and 1.`,
+        });
       }
     }
   }

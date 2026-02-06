@@ -1,4 +1,6 @@
 import { Matrix } from './Matrix.js';
+import { AppError } from '../../errors/AppError.js';
+import { ErrorCode } from '../../errors/ErrorCodes.js';
 
 /**
  * SquareMatrix - Abstract base class for square matrices (NxN)
@@ -28,10 +30,11 @@ export abstract class SquareMatrix extends Matrix {
    */
   get dimension(): number {
     if (this.rows !== this.columns) {
-      throw new Error(
-        `SquareMatrix.dimension: Matrix is not square ` +
-        `(${this.rows}x${this.columns})`
-      );
+      throw new AppError(ErrorCode.MATH_INVALID_ARG, {
+        resource: 'SquareMatrix',
+        method: 'dimension',
+        detail: `Matrix is not square (${this.rows}x${this.columns})`,
+      });
     }
     return this.rows;
   }
@@ -52,10 +55,11 @@ export abstract class SquareMatrix extends Matrix {
    */
   transpose(): this {
     if (this.rows !== this.columns) {
-      throw new Error(
-        `SquareMatrix.transpose(): Matrix must be square ` +
-        `(${this.rows}x${this.columns})`
-      );
+      throw new AppError(ErrorCode.MATH_INVALID_ARG, {
+        resource: 'SquareMatrix',
+        method: 'transpose()',
+        detail: `Matrix must be square (${this.rows}x${this.columns})`,
+      });
     }
     
     // Swap elements: element[i][j] <-> element[j][i]
@@ -88,10 +92,11 @@ export abstract class SquareMatrix extends Matrix {
    */
   determinant(): number {
     if (this.rows !== this.columns) {
-      throw new Error(
-        `SquareMatrix.determinant(): Matrix must be square ` +
-        `(${this.rows}x${this.columns})`
-      );
+      throw new AppError(ErrorCode.MATH_INVALID_ARG, {
+        resource: 'SquareMatrix',
+        method: 'determinant()',
+        detail: `Matrix must be square (${this.rows}x${this.columns})`,
+      });
     }
     return this._determinantRecursive(this._elements, this.rows);
   }
@@ -188,17 +193,20 @@ export abstract class SquareMatrix extends Matrix {
    */
   invert(): this {
     if (this.rows !== this.columns) {
-      throw new Error(
-        `SquareMatrix.invert(): Matrix must be square ` +
-        `(${this.rows}x${this.columns})`
-      );
+      throw new AppError(ErrorCode.MATH_INVALID_ARG, {
+        resource: 'SquareMatrix',
+        method: 'invert()',
+        detail: `Matrix must be square (${this.rows}x${this.columns})`,
+      });
     }
     
     const det = this.determinant();
     if (Math.abs(det) < 1e-10) {
-      throw new Error(
-        `SquareMatrix.invert(): Matrix is not invertible (determinant is ${det})`
-      );
+      throw new AppError(ErrorCode.MATH_NON_INVERTIBLE, {
+        resource: 'SquareMatrix',
+        method: 'invert()',
+        detail: `Matrix is not invertible (determinant is ${det})`,
+      });
     }
     
     const adjugate = this._getAdjugate();

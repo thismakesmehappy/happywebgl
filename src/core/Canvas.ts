@@ -35,6 +35,8 @@
  */
 
 import { GLContext } from './GLContext.js';
+import { AppError } from '../errors/AppError.js';
+import { ErrorCode } from '../errors/ErrorCodes.js';
 
 export interface CanvasOptions {
   /**
@@ -238,18 +240,28 @@ export class Canvas {
       // ID string - look up in DOM
       const found = document.getElementById(element);
       if (!found) {
-        throw new Error(`Canvas element with ID "${element}" not found in the DOM.`);
+        throw new AppError(ErrorCode.CORE_NOT_FOUND, {
+          resource: 'Canvas',
+          method: 'fromElement',
+          detail: `Canvas element with ID "${element}" not found in the DOM.`,
+        });
       }
       if (!(found instanceof HTMLCanvasElement)) {
-        throw new Error(
-          `Element with ID "${element}" is not an HTMLCanvasElement.`,
-        );
+        throw new AppError(ErrorCode.CORE_INVALID_ARG, {
+          resource: 'Canvas',
+          method: 'fromElement',
+          detail: `Element with ID "${element}" is not an HTMLCanvasElement.`,
+        });
       }
       htmlCanvas = found;
     } else {
       // Direct element reference
       if (!(element instanceof HTMLCanvasElement)) {
-        throw new Error('Element must be an HTMLCanvasElement.');
+        throw new AppError(ErrorCode.CORE_INVALID_ARG, {
+          resource: 'Canvas',
+          method: 'fromElement',
+          detail: 'Element must be an HTMLCanvasElement.',
+        });
       }
       htmlCanvas = element;
     }
@@ -511,11 +523,19 @@ export class Canvas {
     if (typeof container === 'string') {
       // CSS selector - must not be empty
       if (!container) {
-        throw new Error('Container selector cannot be empty');
+        throw new AppError(ErrorCode.CORE_INVALID_ARG, {
+          resource: 'Canvas',
+          method: '_appendToContainer',
+          detail: 'Container selector cannot be empty',
+        });
       }
       parent = document.querySelector(container);
       if (!parent) {
-        throw new Error(`Container not found: ${container}`);
+        throw new AppError(ErrorCode.CORE_NOT_FOUND, {
+          resource: 'Canvas',
+          method: '_appendToContainer',
+          detail: `Container not found: ${container}`,
+        });
       }
     } else {
       // Direct element reference

@@ -14,6 +14,8 @@
  */
 
 import { GLContext } from '../../core/GLContext';
+import { AppError } from '../../errors/AppError.js';
+import { ErrorCode } from '../../errors/ErrorCodes.js';
 
 /**
  * Enumeration of buffer targets
@@ -332,7 +334,11 @@ export abstract class Buffer {
     usage: BufferUsage = BufferUsage.STATIC_DRAW,
   ) {
     if (!context) {
-      throw new Error('Buffer: GLContext is required');
+      throw new AppError(ErrorCode.RES_INVALID_ARG, {
+        resource: 'Buffer',
+        method: 'constructor',
+        detail: 'GLContext is required',
+      });
     }
 
     this._context = context;
@@ -343,7 +349,11 @@ export abstract class Buffer {
     const gl = this._context.gl;
     const buffer = gl.createBuffer();
     if (!buffer) {
-      throw new Error('Buffer: Failed to create WebGL buffer');
+      throw new AppError(ErrorCode.RES_GL_ERROR, {
+        resource: 'Buffer',
+        method: 'constructor',
+        detail: 'Failed to create WebGL buffer',
+      });
     }
     this._buffer = buffer;
 
@@ -508,12 +518,15 @@ export abstract class Buffer {
       } else {
         // Unknown ArrayBufferView type (e.g., DataView)
         // We cannot infer element count without additional information
-        throw new Error(
-          `Buffer.setData: Cannot infer element type from ${data.constructor.name}. ` +
+        throw new AppError(ErrorCode.RES_INVALID_ARG, {
+          resource: 'Buffer',
+          method: 'setData',
+          detail:
+            `Cannot infer element type from ${data.constructor.name}. ` +
             `Supported types: Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array, ` +
             `Int32Array, Uint32Array, Float32Array, Float64Array, BigInt64Array, BigUint64Array. ` +
             `Use setDataRaw() for ArrayBuffer or DataView.`,
-        );
+        });
       }
     } else {
       this._length = 0;
@@ -530,10 +543,13 @@ export abstract class Buffer {
     // Check for errors
     const error = gl.getError();
     if (error !== gl.NO_ERROR) {
-      throw new Error(
-        `Buffer.setData failed with WebGL error: ${error}. ` +
+      throw new AppError(ErrorCode.RES_GL_ERROR, {
+        resource: 'Buffer',
+        method: 'setData',
+        detail:
+          `Buffer.setData failed with WebGL error: ${error}. ` +
           `Target: ${this._target}, Data size: ${data?.byteLength ?? 0} bytes`,
-      );
+      });
     }
 
     return this;
@@ -573,9 +589,11 @@ export abstract class Buffer {
     usage?: BufferUsage,
   ): this {
     if (elementByteSize <= 0 || ![1, 2, 4, 8].includes(elementByteSize)) {
-      throw new Error(
-        `Buffer.setDataRaw: elementByteSize must be 1, 2, 4, or 8, got ${elementByteSize}`,
-      );
+      throw new AppError(ErrorCode.RES_INVALID_ARG, {
+        resource: 'Buffer',
+        method: 'setDataRaw',
+        detail: `elementByteSize must be 1, 2, 4, or 8, got ${elementByteSize}`,
+      });
     }
 
     const gl = this._context.gl;
@@ -593,10 +611,13 @@ export abstract class Buffer {
     if (data) {
       const byteLength = data.byteLength;
       if (byteLength % elementByteSize !== 0) {
-        throw new Error(
-          `Buffer.setDataRaw: Data size (${byteLength} bytes) is not a multiple of ` +
+        throw new AppError(ErrorCode.RES_INVALID_ARG, {
+          resource: 'Buffer',
+          method: 'setDataRaw',
+          detail:
+            `Data size (${byteLength} bytes) is not a multiple of ` +
             `elementByteSize (${elementByteSize} bytes)`,
-        );
+        });
       }
       this._length = byteLength / elementByteSize;
       this._elementByteSize = elementByteSize;
@@ -616,10 +637,13 @@ export abstract class Buffer {
     // Check for errors
     const error = gl.getError();
     if (error !== gl.NO_ERROR) {
-      throw new Error(
-        `Buffer.setDataRaw failed with WebGL error: ${error}. ` +
+      throw new AppError(ErrorCode.RES_GL_ERROR, {
+        resource: 'Buffer',
+        method: 'setDataRaw',
+        detail:
+          `Buffer.setDataRaw failed with WebGL error: ${error}. ` +
           `Target: ${this._target}, Data size: ${data?.byteLength ?? 0} bytes`,
-      );
+      });
     }
 
     return this;
@@ -692,18 +716,24 @@ export abstract class Buffer {
   setMetadata(length: number, elementByteSize: number): void {
     // Validate length
     if (length < 0 || !Number.isFinite(length) || !Number.isInteger(length)) {
-      throw new Error(
-        `Buffer.setMetadata: Invalid length: ${length}. ` +
+      throw new AppError(ErrorCode.RES_INVALID_ARG, {
+        resource: 'Buffer',
+        method: 'setMetadata',
+        detail:
+          `Invalid length: ${length}. ` +
           `Must be a non-negative integer.`,
-      );
+      });
     }
 
     // Validate elementByteSize
     if (elementByteSize <= 0 || ![1, 2, 4, 8].includes(elementByteSize)) {
-      throw new Error(
-        `Buffer.setMetadata: Invalid elementByteSize: ${elementByteSize}. ` +
+      throw new AppError(ErrorCode.RES_INVALID_ARG, {
+        resource: 'Buffer',
+        method: 'setMetadata',
+        detail:
+          `Invalid elementByteSize: ${elementByteSize}. ` +
           `Must be 1, 2, 4, or 8.`,
-      );
+      });
     }
 
     this._length = length;
@@ -746,46 +776,59 @@ export abstract class Buffer {
    */
   updateData(offset: number, data: ArrayBufferView): void {
     if (this._length === 0) {
-      throw new Error(
-        'Buffer.updateData: Buffer has no data. Call setData first.',
-      );
+      throw new AppError(ErrorCode.RES_INVALID_ARG, {
+        resource: 'Buffer',
+        method: 'updateData',
+        detail: 'Buffer has no data. Call setData first.',
+      });
     }
 
     if (offset < 0) {
-      throw new Error(
-        `Buffer.updateData: Offset must be non-negative, got ${offset}`,
-      );
+      throw new AppError(ErrorCode.RES_INVALID_ARG, {
+        resource: 'Buffer',
+        method: 'updateData',
+        detail: `Offset must be non-negative, got ${offset}`,
+      });
     }
 
     // Type safety: validate data type matches original
     const info = TYPED_ARRAY_INFO.get(data.constructor);
     if (!info) {
-      throw new Error(
-        `Buffer.updateData: Cannot infer type from ${data.constructor.name}. ` +
+      throw new AppError(ErrorCode.RES_INVALID_ARG, {
+        resource: 'Buffer',
+        method: 'updateData',
+        detail:
+          `Cannot infer type from ${data.constructor.name}. ` +
           `Ensure data is a recognized TypedArray. ` +
           `Use updateDataUnsafe() if you need to bypass type checking.`,
-      );
+      });
     }
 
     if (info.type !== this._elementType) {
-      throw new Error(
-        `Buffer.updateData: Data type mismatch. ` +
+      throw new AppError(ErrorCode.RES_INVALID_ARG, {
+        resource: 'Buffer',
+        method: 'updateData',
+        detail:
+          `Data type mismatch. ` +
           `Buffer contains ${this._elementType} elements, ` +
           `but received ${info.type}. ` +
           `Use updateDataUnsafe() to override type checking at your own risk.`,
-      );
+      });
     }
 
     // Bounds checking: ensure update fits in buffer
     const byteLength = this.byteLength;
     const requiredBytes = offset + data.byteLength;
     if (requiredBytes > byteLength) {
-      throw new Error(
-        `Buffer.updateData: Update would overflow buffer. ` +
+      throw new AppError(ErrorCode.RES_INVALID_ARG, {
+        resource: 'Buffer',
+        method: 'updateData',
+        detail:
+          `Update would overflow buffer. ` +
           `Buffer size: ${byteLength} bytes, ` +
           `offset: ${offset}, data: ${data.byteLength} bytes. ` +
           `Total needed: ${requiredBytes} bytes.`,
-      );
+      });
     }
 
     this._uploadDataToBuffer(offset, data);
@@ -824,15 +867,19 @@ export abstract class Buffer {
    */
   updateDataUnsafe(offset: number, data: ArrayBufferView): void {
     if (this._length === 0) {
-      throw new Error(
-        'Buffer.updateDataUnsafe: Buffer has no data. Call setData first.',
-      );
+      throw new AppError(ErrorCode.RES_INVALID_ARG, {
+        resource: 'Buffer',
+        method: 'updateDataUnsafe',
+        detail: 'Buffer has no data. Call setData first.',
+      });
     }
 
     if (offset < 0) {
-      throw new Error(
-        `Buffer.updateDataUnsafe: Offset must be non-negative, got ${offset}`,
-      );
+      throw new AppError(ErrorCode.RES_INVALID_ARG, {
+        resource: 'Buffer',
+        method: 'updateDataUnsafe',
+        detail: `Offset must be non-negative, got ${offset}`,
+      });
     }
 
     this._uploadDataToBuffer(offset, data);
@@ -857,7 +904,11 @@ export abstract class Buffer {
     // Check for errors
     const error = gl.getError();
     if (error !== gl.NO_ERROR) {
-      throw new Error(`Buffer data upload failed with WebGL error: ${error}`);
+      throw new AppError(ErrorCode.RES_GL_ERROR, {
+        resource: 'Buffer',
+        method: '_uploadDataToBuffer',
+        detail: `Buffer data upload failed with WebGL error: ${error}`,
+      });
     }
   }
 

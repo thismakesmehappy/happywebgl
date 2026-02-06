@@ -22,6 +22,9 @@
  * - All operations require matrices of the same size
  * - Attempting operations between different-sized matrices will throw an error
  */
+import { AppError } from '../../errors/AppError.js';
+import { ErrorCode } from '../../errors/ErrorCodes.js';
+
 export abstract class Matrix {
   /**
    * Proxy-based column accessors for m[column][row] syntax
@@ -62,10 +65,13 @@ export abstract class Matrix {
   protected _validateSize(): void {
     const expectedSize = this.rows * this.columns;
     if (this._elements.length !== expectedSize) {
-      throw new Error(
-        `Matrix elements array size mismatch: expected ${expectedSize} elements ` +
-        `(${this.rows}x${this.columns}) for ${this.constructor.name}, got ${this._elements.length}`
-      );
+      throw new AppError(ErrorCode.MATH_INVALID_ARG, {
+        resource: 'Matrix',
+        method: '_validateSize',
+        detail:
+          `Matrix elements array size mismatch: expected ${expectedSize} elements ` +
+          `(${this.rows}x${this.columns}) for ${this.constructor.name}, got ${this._elements.length}`,
+      });
     }
   }
 
@@ -187,10 +193,18 @@ export abstract class Matrix {
    */
   protected _validateIndices(column: number, row: number): void {
     if (column < 0 || column >= this.columns) {
-      throw new Error(`Column index ${column} out of bounds for ${this.constructor.name} (0-${this.columns - 1})`);
+      throw new AppError(ErrorCode.MATH_OUT_OF_BOUNDS, {
+        resource: 'Matrix',
+        method: '_validateIndices',
+        detail: `Column index ${column} out of bounds for ${this.constructor.name} (0-${this.columns - 1})`,
+      });
     }
     if (row < 0 || row >= this.rows) {
-      throw new Error(`Row index ${row} out of bounds for ${this.constructor.name} (0-${this.rows - 1})`);
+      throw new AppError(ErrorCode.MATH_OUT_OF_BOUNDS, {
+        resource: 'Matrix',
+        method: '_validateIndices',
+        detail: `Row index ${row} out of bounds for ${this.constructor.name} (0-${this.rows - 1})`,
+      });
     }
   }
 
@@ -207,9 +221,13 @@ export abstract class Matrix {
    */
   protected _validateSameSize(a: Matrix, b: Matrix): void {
     if (!this._areSameSize(a, b)) {
-      throw new Error(
-        `Matrices must have the same size: ${a.constructor.name} (${a.rows}x${a.columns}) and ${b.constructor.name} (${b.rows}x${b.columns})`
-      );
+      throw new AppError(ErrorCode.MATH_INVALID_ARG, {
+        resource: 'Matrix',
+        method: '_validateSameSize',
+        detail:
+          `Matrices must have the same size: ${a.constructor.name} (${a.rows}x${a.columns}) and ` +
+          `${b.constructor.name} (${b.rows}x${b.columns})`,
+      });
     }
   }
 
@@ -337,15 +355,21 @@ export abstract class Matrix {
   multiplyMatrices(a: Matrix, b: Matrix): this {
     // Validate: a.columns === b.rows
     if (a.columns !== b.rows) {
-      throw new Error(
-        `Matrix multiplication incompatible: ${a.rows}x${a.columns} * ${b.rows}x${b.columns}`
-      );
+      throw new AppError(ErrorCode.MATH_INVALID_ARG, {
+        resource: 'Matrix',
+        method: 'multiplyMatrices',
+        detail: `Matrix multiplication incompatible: ${a.rows}x${a.columns} * ${b.rows}x${b.columns}`,
+      });
     }
     
     // Validate: result size matches this matrix
     if (this.rows !== a.rows || this.columns !== b.columns) {
-        const errorMessage = `Result matrix size mismatch: expected ${a.rows}x${b.columns}, got ${this.rows}x${this.columns}`;
-      throw new Error(errorMessage);
+      const errorMessage = `Result matrix size mismatch: expected ${a.rows}x${b.columns}, got ${this.rows}x${this.columns}`;
+      throw new AppError(ErrorCode.MATH_INVALID_ARG, {
+        resource: 'Matrix',
+        method: 'multiplyMatrices',
+        detail: errorMessage,
+      });
     }
     
     // Generic triple-loop matrix multiplication
@@ -442,9 +466,11 @@ export abstract class Matrix {
     // Get the transpose type from the class's static property
     const Constructor = m.constructor as typeof Matrix & { TransposeType: new (...args: any[]) => Matrix };
     if (!Constructor.TransposeType) {
-      throw new Error(
-        `${m.constructor.name} must declare static readonly TransposeType property`
-      );
+      throw new AppError(ErrorCode.MATH_INVALID_ARG, {
+        resource: 'Matrix',
+        method: 'transpose',
+        detail: `${m.constructor.name} must declare static readonly TransposeType property`,
+      });
     }
     const TransposeClass = Constructor.TransposeType;
     
@@ -456,18 +482,24 @@ export abstract class Matrix {
     } else if ('fromArray' in TransposeClass && typeof (TransposeClass as any).fromArray === 'function') {
       result = (TransposeClass as any).fromArray(transposedElements);
     } else {
-      throw new Error(
-        `${TransposeClass.name} must provide fromElements() or fromArray() factory method ` +
-        `for transpose() to work`
-      );
+      throw new AppError(ErrorCode.MATH_INVALID_ARG, {
+        resource: 'Matrix',
+        method: 'transpose',
+        detail:
+          `${TransposeClass.name} must provide fromElements() or fromArray() factory method ` +
+          `for transpose() to work`,
+      });
     }
     
     // Runtime validation: verify dimensions are swapped correctly
     if (result.rows !== m.columns || result.columns !== m.rows) {
-      throw new Error(
-        `Transpose dimension mismatch: expected ${m.columns}x${m.rows}, ` +
-        `got ${result.rows}x${result.columns}`
-      );
+      throw new AppError(ErrorCode.MATH_INVALID_ARG, {
+        resource: 'Matrix',
+        method: 'transpose',
+        detail:
+          `Transpose dimension mismatch: expected ${m.columns}x${m.rows}, ` +
+          `got ${result.rows}x${result.columns}`,
+      });
     }
     
     return result as InstanceType<typeof TransposeClass>;
@@ -670,7 +702,11 @@ export abstract class Matrix {
    */
   equalsEpsilon(m: Matrix, epsilon: number = 0.00001): boolean {
     if (epsilon < 0) {
-      throw new Error(`equalsEpsilon: epsilon must be non-negative, got ${epsilon}`);
+      throw new AppError(ErrorCode.MATH_INVALID_ARG, {
+        resource: 'Matrix',
+        method: 'equalsEpsilon',
+        detail: `epsilon must be non-negative, got ${epsilon}`,
+      });
     }
     if (!this._areSameSize(this, m)) {
       return false;
@@ -699,9 +735,11 @@ export abstract class Matrix {
   protected _validateFinite(methodName: string): void {
     if (!this.isFinite()) {
       const nonFinite = Array.from(this._elements).filter(e => !Number.isFinite(e));
-      throw new Error(
-        `${methodName}(): matrix contains non-finite values (${nonFinite.join(', ')})`
-      );
+      throw new AppError(ErrorCode.MATH_INVALID_ARG, {
+        resource: 'Matrix',
+        method: methodName,
+        detail: `matrix contains non-finite values (${nonFinite.join(', ')})`,
+      });
     }
   }
 

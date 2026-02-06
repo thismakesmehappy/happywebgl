@@ -7,6 +7,8 @@ import { Matrix3 } from '../math/matrices/Matrix3';
 import { Matrix4 } from '../math/matrices/Matrix4';
 import { Quaternion } from '../math/quaternions/Quaternion';
 import { Matrix } from '../math';
+import { AppError } from '../errors/AppError.js';
+import { ErrorCode } from '../errors/ErrorCodes.js';
 
 /**
  * Program - WebGL program wrapper (Layer 2 GPU resource)
@@ -153,7 +155,7 @@ export class Program {
    */
   get program(): WebGLProgram {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     return this._program;
   }
@@ -202,7 +204,7 @@ export class Program {
    */
   use(): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
 
     this._ctx.gl.useProgram(this._program);
@@ -235,7 +237,7 @@ export class Program {
    */
   unuse(): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
 
     this._ctx.gl.useProgram(null);
@@ -281,7 +283,7 @@ export class Program {
    */
   getUniformLocation(name: string): WebGLUniformLocation | null {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
 
     // Check cache first
@@ -326,7 +328,7 @@ export class Program {
    */
   getAttributeLocation(name: string): GLint {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
 
     // Check cache first
@@ -360,7 +362,7 @@ export class Program {
    */
   setUniform1f(name: string, value: number): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniform1f');
     const location = this.getUniformLocation(name);
@@ -385,7 +387,7 @@ export class Program {
    */
   setUniform1i(name: string, value: number): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniform1i');
     this._validateInt(value, 'setUniform1i');
@@ -408,7 +410,7 @@ export class Program {
    */
   setUniform1ui(name: string, value: number): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniform1ui');
     this._validateUint(value, 'setUniform1ui');
@@ -447,7 +449,7 @@ export class Program {
    */
   setUniform2f(name: string, x: number | Vector2, y?: number): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniform2f');
     const location = this.getUniformLocation(name);
@@ -456,7 +458,11 @@ export class Program {
         this._ctx.gl.uniform2f(location, x.x, x.y);
       } else {
         if (y === undefined) {
-          throw new Error('setUniform2f: y is required when x is a number');
+          throw new AppError(ErrorCode.RES_INVALID_ARG, {
+            resource: 'Program',
+            method: 'setUniform2f',
+            detail: 'y is required when x is a number',
+          });
         }
         this._ctx.gl.uniform2f(location, x, y);
       }
@@ -488,7 +494,7 @@ export class Program {
    */
   setUniform2i(name: string, x: number | Vector2, y?: number): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniform2i');
     const location = this.getUniformLocation(name);
@@ -498,7 +504,11 @@ export class Program {
         this._ctx.gl.uniform2i(location, x.x, x.y);
       } else {
         if (y === undefined) {
-          throw new Error('setUniform2i: y is required when x is a number');
+          throw new AppError(ErrorCode.RES_INVALID_ARG, {
+            resource: 'Program',
+            method: 'setUniform2i',
+            detail: 'y is required when x is a number',
+          });
         }
         this._validateIntArray([x, y], 'setUniform2i');
         this._ctx.gl.uniform2i(location, x, y);
@@ -531,7 +541,7 @@ export class Program {
    */
   setUniform2ui(name: string, x: number | Vector2, y?: number): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniform2ui');
     const location = this.getUniformLocation(name);
@@ -541,7 +551,11 @@ export class Program {
         this._ctx.gl.uniform2ui(location, x.x, x.y);
       } else {
         if (y === undefined) {
-          throw new Error('setUniform2ui: y is required when x is a number');
+          throw new AppError(ErrorCode.RES_INVALID_ARG, {
+            resource: 'Program',
+            method: 'setUniform2ui',
+            detail: 'y is required when x is a number',
+          });
         }
         this._validateUintArray([x, y], 'setUniform2ui');
         this._ctx.gl.uniform2ui(location, x, y);
@@ -579,7 +593,7 @@ export class Program {
    */
   setUniform3f(name: string, x: number | Vector3, y?: number, z?: number): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniform3f');
     const location = this.getUniformLocation(name);
@@ -588,7 +602,11 @@ export class Program {
         this._ctx.gl.uniform3f(location, x.x, x.y, x.z);
       } else {
         if (y === undefined || z === undefined) {
-          throw new Error('setUniform3f: y and z are required when x is a number');
+          throw new AppError(ErrorCode.RES_INVALID_ARG, {
+            resource: 'Program',
+            method: 'setUniform3f',
+            detail: 'y and z are required when x is a number',
+          });
         }
         this._ctx.gl.uniform3f(location, x, y, z);
       }
@@ -621,7 +639,7 @@ export class Program {
    */
   setUniform3i(name: string, x: number | Vector3, y?: number, z?: number): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniform3i');
     const location = this.getUniformLocation(name);
@@ -631,7 +649,11 @@ export class Program {
         this._ctx.gl.uniform3i(location, x.x, x.y, x.z);
       } else {
         if (y === undefined || z === undefined) {
-          throw new Error('setUniform3i: y and z are required when x is a number');
+          throw new AppError(ErrorCode.RES_INVALID_ARG, {
+            resource: 'Program',
+            method: 'setUniform3i',
+            detail: 'y and z are required when x is a number',
+          });
         }
         this._validateIntArray([x, y, z], 'setUniform3i');
         this._ctx.gl.uniform3i(location, x, y, z);
@@ -665,7 +687,7 @@ export class Program {
    */
   setUniform3ui(name: string, x: number | Vector3, y?: number, z?: number): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniform3ui');
     const location = this.getUniformLocation(name);
@@ -675,7 +697,11 @@ export class Program {
         this._ctx.gl.uniform3ui(location, x.x, x.y, x.z);
       } else {
         if (y === undefined || z === undefined) {
-          throw new Error('setUniform3ui: y and z are required when x is a number');
+          throw new AppError(ErrorCode.RES_INVALID_ARG, {
+            resource: 'Program',
+            method: 'setUniform3ui',
+            detail: 'y and z are required when x is a number',
+          });
         }
         this._validateUintArray([x, y, z], 'setUniform3ui');
         this._ctx.gl.uniform3ui(location, x, y, z);
@@ -725,7 +751,7 @@ export class Program {
     w?: number,
   ): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniform4f');
     const location = this.getUniformLocation(name);
@@ -736,7 +762,11 @@ export class Program {
         this._ctx.gl.uniform4f(location, x.x, x.y, x.z, x.w);
       } else {
         if (y === undefined || z === undefined || w === undefined) {
-          throw new Error('setUniform4f: y, z, and w are required when x is a number');
+          throw new AppError(ErrorCode.RES_INVALID_ARG, {
+            resource: 'Program',
+            method: 'setUniform4f',
+            detail: 'y, z, and w are required when x is a number',
+          });
         }
         this._ctx.gl.uniform4f(location, x, y, z, w);
       }
@@ -776,7 +806,7 @@ export class Program {
     w?: number,
   ): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniform4i');
     const location = this.getUniformLocation(name);
@@ -789,7 +819,11 @@ export class Program {
         this._ctx.gl.uniform4i(location, x.x, x.y, x.z, x.w);
       } else {
         if (y === undefined || z === undefined || w === undefined) {
-          throw new Error('setUniform4i: y, z, and w are required when x is a number');
+          throw new AppError(ErrorCode.RES_INVALID_ARG, {
+            resource: 'Program',
+            method: 'setUniform4i',
+            detail: 'y, z, and w are required when x is a number',
+          });
         }
         this._validateIntArray([x, y, z, w], 'setUniform4i');
         this._ctx.gl.uniform4i(location, x, y, z, w);
@@ -830,7 +864,7 @@ export class Program {
     w?: number,
   ): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniform4ui');
     const location = this.getUniformLocation(name);
@@ -843,7 +877,11 @@ export class Program {
         this._ctx.gl.uniform4ui(location, x.x, x.y, x.z, x.w);
       } else {
         if (y === undefined || z === undefined || w === undefined) {
-          throw new Error('setUniform4ui: y, z, and w are required when x is a number');
+          throw new AppError(ErrorCode.RES_INVALID_ARG, {
+            resource: 'Program',
+            method: 'setUniform4ui',
+            detail: 'y, z, and w are required when x is a number',
+          });
         }
         this._validateUintArray([x, y, z, w], 'setUniform4ui');
         this._ctx.gl.uniform4ui(location, x, y, z, w);
@@ -868,7 +906,7 @@ export class Program {
    */
   setUniform1fv(name: string, value: Float32Array | number[]): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniform1fv');
     this._validateArraySize(value, 1, 'setUniform1fv');
@@ -891,7 +929,7 @@ export class Program {
    */
   setUniform2fv(name: string, value: Float32Array | number[]): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniform2fv');
     this._validateArraySize(value, 2, 'setUniform2fv');
@@ -914,7 +952,7 @@ export class Program {
    */
   setUniform3fv(name: string, value: Float32Array | number[]): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniform3fv');
     this._validateArraySize(value, 3, 'setUniform3fv');
@@ -937,7 +975,7 @@ export class Program {
    */
   setUniform4fv(name: string, value: Float32Array | number[]): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniform4fv');
     this._validateArraySize(value, 4, 'setUniform4fv');
@@ -964,7 +1002,7 @@ export class Program {
    */
   setUniform1iv(name: string, value: Int32Array | number[]): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniform1iv');
     this._validateArraySize(value, 1, 'setUniform1iv');
@@ -987,7 +1025,7 @@ export class Program {
    */
   setUniform2iv(name: string, value: Int32Array | number[]): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniform2iv');
     this._validateArraySize(value, 2, 'setUniform2iv');
@@ -1010,7 +1048,7 @@ export class Program {
    */
   setUniform3iv(name: string, value: Int32Array | number[]): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniform3iv');
     this._validateArraySize(value, 3, 'setUniform3iv');
@@ -1033,7 +1071,7 @@ export class Program {
    */
   setUniform4iv(name: string, value: Int32Array | number[]): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniform4iv');
     this._validateArraySize(value, 4, 'setUniform4iv');
@@ -1060,7 +1098,7 @@ export class Program {
    */
   setUniform1uiv(name: string, value: Uint32Array | number[]): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniform1uiv');
     this._validateArraySize(value, 1, 'setUniform1uiv');
@@ -1083,7 +1121,7 @@ export class Program {
    */
   setUniform2uiv(name: string, value: Uint32Array | number[]): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniform2uiv');
     this._validateArraySize(value, 2, 'setUniform2uiv');
@@ -1106,7 +1144,7 @@ export class Program {
    */
   setUniform3uiv(name: string, value: Uint32Array | number[]): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniform3uiv');
     this._validateArraySize(value, 3, 'setUniform3uiv');
@@ -1129,7 +1167,7 @@ export class Program {
    */
   setUniform4uiv(name: string, value: Uint32Array | number[]): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniform4uiv');
     this._validateArraySize(value, 4, 'setUniform4uiv');
@@ -1171,7 +1209,7 @@ export class Program {
     transpose: boolean = false,
   ): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniformMatrix2fv');
     const location = this.getUniformLocation(name);
@@ -1209,7 +1247,7 @@ export class Program {
     transpose: boolean = false,
   ): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniformMatrix3fv');
     const location = this.getUniformLocation(name);
@@ -1251,7 +1289,7 @@ export class Program {
     transpose: boolean = false,
   ): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniformMatrix4fv');
     const location = this.getUniformLocation(name);
@@ -1286,7 +1324,7 @@ export class Program {
     transpose: boolean = false,
   ): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniformMatrix2x3fv');
     const location = this.getUniformLocation(name);
@@ -1318,7 +1356,7 @@ export class Program {
     transpose: boolean = false,
   ): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniformMatrix2x4fv');
     const location = this.getUniformLocation(name);
@@ -1350,7 +1388,7 @@ export class Program {
     transpose: boolean = false,
   ): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniformMatrix3x2fv');
     const location = this.getUniformLocation(name);
@@ -1382,7 +1420,7 @@ export class Program {
     transpose: boolean = false,
   ): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniformMatrix3x4fv');
     const location = this.getUniformLocation(name);
@@ -1414,7 +1452,7 @@ export class Program {
     transpose: boolean = false,
   ): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniformMatrix4x2fv');
     const location = this.getUniformLocation(name);
@@ -1446,7 +1484,7 @@ export class Program {
     transpose: boolean = false,
   ): this {
     if (this._disposed) {
-      throw new Error('Program has been disposed');
+      throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniformMatrix4x3fv');
     const location = this.getUniformLocation(name);
@@ -1474,9 +1512,11 @@ export class Program {
   private _validateProgramInUse(methodName: string): void {
     const currentProgram = this._ctx.queryCurrentProgram();
     if (currentProgram !== this._program) {
-      throw new Error(
-        `${methodName}: Program must be in use (call program.use() first)`,
-      );
+      throw new AppError(ErrorCode.RES_INVALID_ARG, {
+        resource: 'Program',
+        method: methodName,
+        detail: 'Program must be in use (call program.use() first)',
+      });
     }
   }
 
@@ -1487,13 +1527,20 @@ export class Program {
    */
   private _validateInt(value: number, methodName: string): void {
     if (!Number.isFinite(value)) {
-      throw new Error(`${methodName}: Value must be a finite number, got ${value}`);
+      throw new AppError(ErrorCode.RES_INVALID_ARG, {
+        resource: 'Program',
+        method: methodName,
+        detail: `Value must be a finite number, got ${value}`,
+      });
     }
     if (!Number.isInteger(value)) {
-      throw new Error(
-        `${methodName}: Value must be an integer, got ${value}. ` +
+      throw new AppError(ErrorCode.RES_INVALID_ARG, {
+        resource: 'Program',
+        method: methodName,
+        detail:
+          `Value must be an integer, got ${value}. ` +
           `Use Math.floor(), Math.round(), or Math.trunc() to convert.`,
-      );
+      });
     }
   }
 
@@ -1515,18 +1562,27 @@ export class Program {
    */
   private _validateUint(value: number, methodName: string): void {
     if (!Number.isFinite(value)) {
-      throw new Error(`${methodName}: Value must be a finite number, got ${value}`);
+      throw new AppError(ErrorCode.RES_INVALID_ARG, {
+        resource: 'Program',
+        method: methodName,
+        detail: `Value must be a finite number, got ${value}`,
+      });
     }
     if (!Number.isInteger(value)) {
-      throw new Error(
-        `${methodName}: Value must be an integer, got ${value}. ` +
+      throw new AppError(ErrorCode.RES_INVALID_ARG, {
+        resource: 'Program',
+        method: methodName,
+        detail:
+          `Value must be an integer, got ${value}. ` +
           `Use Math.floor(), Math.round(), or Math.trunc() to convert.`,
-      );
+      });
     }
     if (value < 0) {
-      throw new Error(
-        `${methodName}: Value must be non-negative for unsigned integer, got ${value}`,
-      );
+      throw new AppError(ErrorCode.RES_INVALID_ARG, {
+        resource: 'Program',
+        method: methodName,
+        detail: `Value must be non-negative for unsigned integer, got ${value}`,
+      });
     }
   }
 
@@ -1552,13 +1608,20 @@ export class Program {
     methodName: string,
   ): void {
     if (value.length === 0) {
-      throw new Error(`${methodName}: Array cannot be empty`);
+      throw new AppError(ErrorCode.RES_INVALID_ARG, {
+        resource: 'Program',
+        method: methodName,
+        detail: 'Array cannot be empty',
+      });
     }
     if (value.length % expectedSize !== 0) {
-      throw new Error(
-        `${methodName}: Array length must be divisible by ${expectedSize}, ` +
+      throw new AppError(ErrorCode.RES_INVALID_ARG, {
+        resource: 'Program',
+        method: methodName,
+        detail:
+          `Array length must be divisible by ${expectedSize}, ` +
           `got length ${value.length}`,
-      );
+      });
     }
   }
 
@@ -1574,7 +1637,11 @@ export class Program {
       methodName: string,
   ): void {
     if (value.columns !== expectedColumns || value.rows !== expectedRows) {
-      throw new Error(`${methodName}: Matrix is not ${expectedColumns}x${expectedRows}`);
+      throw new AppError(ErrorCode.RES_INVALID_ARG, {
+        resource: 'Program',
+        method: methodName,
+        detail: `Matrix is not ${expectedColumns}x${expectedRows}`,
+      });
     }
   }
 
