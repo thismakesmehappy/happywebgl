@@ -8,9 +8,9 @@
  */
 
 // Core modules - Phase 1
-// export * from './core/index.js';
+export * from './core/index.js';
 export * from './math/index.js';  // Vector3 implemented
-// export * from './resources/index.js';
+export * from './resources/index.js';
 
 // Scene and rendering - Phase 1 & 3
 // export * from './scene/index.js';

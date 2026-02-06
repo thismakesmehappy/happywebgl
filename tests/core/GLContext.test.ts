@@ -117,6 +117,10 @@ describe('GLContext', () => {
       texParameterf: vi.fn(),
       texImage2D: vi.fn(),
       texSubImage2D: vi.fn(),
+      texImage3D: vi.fn(),
+      texSubImage3D: vi.fn(),
+      texStorage2D: vi.fn(),
+      texStorage3D: vi.fn(),
       getTexParameter: vi.fn(),
       createVertexArray: vi.fn(() => ({
         id: Math.random(),
@@ -1360,6 +1364,22 @@ describe('GLContext', () => {
     });
   });
 
+  describe('checkError', () => {
+    let glContext: GLContext;
+
+    beforeEach(() => {
+      glContext = new GLContext(canvas);
+      vi.clearAllMocks();
+      vi.spyOn(canvas, 'getContext').mockReturnValue(mockGL as WebGL2RenderingContext);
+    });
+
+    it('delegates to internal error checker', () => {
+      const spy = vi.spyOn(glContext as any, '_checkError');
+      glContext.checkError('test-context');
+      expect(spy).toHaveBeenCalledWith('test-context');
+    });
+  });
+
   describe('queryCurrentRenderbuffer', () => {
     let glContext: GLContext;
 
@@ -1559,6 +1579,13 @@ describe('GLContext', () => {
       });
     });
 
+    describe('setActiveTextureUnit', () => {
+      it('sets the active texture unit', () => {
+        glContext.setActiveTextureUnit(3);
+        expect(mockGL.activeTexture).toHaveBeenCalledWith(mockGL.TEXTURE0! + 3);
+      });
+    });
+
     describe('unbindTexture', () => {
       it('activates texture unit and unbinds', () => {
         glContext.unbindTexture(mockGL.TEXTURE_2D!, 2);
@@ -1607,6 +1634,113 @@ describe('GLContext', () => {
 
         expect(mockGL.bindTexture).toHaveBeenCalledWith(mockGL.TEXTURE_2D, texture);
         expect(mockGL.texParameterf).toHaveBeenCalledWith(mockGL.TEXTURE_2D, 0x84ef, 0.5);
+        expect(mockGL.bindTexture).toHaveBeenCalledWith(mockGL.TEXTURE_2D, null);
+      });
+    });
+
+    describe('texImage3D', () => {
+      it('binds, uploads data, and unbinds', () => {
+        const texture = glContext.createTexture();
+        const data = new Uint8Array(8);
+        glContext.texImage3D(
+          mockGL.TEXTURE_2D!,
+          texture,
+          0,
+          0x1908,
+          2,
+          2,
+          2,
+          0,
+          0x1908,
+          0x1401,
+          data,
+        );
+
+        expect(mockGL.bindTexture).toHaveBeenCalledWith(mockGL.TEXTURE_2D, texture);
+        expect(mockGL.texImage3D).toHaveBeenCalledWith(
+          mockGL.TEXTURE_2D,
+          0,
+          0x1908,
+          2,
+          2,
+          2,
+          0,
+          0x1908,
+          0x1401,
+          data,
+        );
+        expect(mockGL.bindTexture).toHaveBeenCalledWith(mockGL.TEXTURE_2D, null);
+      });
+    });
+
+    describe('texSubImage3D', () => {
+      it('binds, uploads sub data, and unbinds', () => {
+        const texture = glContext.createTexture();
+        const data = new Uint8Array(4);
+        glContext.texSubImage3D(
+          mockGL.TEXTURE_2D!,
+          texture,
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          0x1908,
+          0x1401,
+          data,
+        );
+
+        expect(mockGL.bindTexture).toHaveBeenCalledWith(mockGL.TEXTURE_2D, texture);
+        expect(mockGL.texSubImage3D).toHaveBeenCalledWith(
+          mockGL.TEXTURE_2D,
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          0x1908,
+          0x1401,
+          data,
+        );
+        expect(mockGL.bindTexture).toHaveBeenCalledWith(mockGL.TEXTURE_2D, null);
+      });
+    });
+
+    describe('texStorage2D', () => {
+      it('binds, allocates storage, and unbinds', () => {
+        const texture = glContext.createTexture();
+        glContext.texStorage2D(mockGL.TEXTURE_2D!, texture, 3, 0x1908, 64, 32);
+
+        expect(mockGL.bindTexture).toHaveBeenCalledWith(mockGL.TEXTURE_2D, texture);
+        expect(mockGL.texStorage2D).toHaveBeenCalledWith(
+          mockGL.TEXTURE_2D,
+          3,
+          0x1908,
+          64,
+          32,
+        );
+        expect(mockGL.bindTexture).toHaveBeenCalledWith(mockGL.TEXTURE_2D, null);
+      });
+    });
+
+    describe('texStorage3D', () => {
+      it('binds, allocates storage, and unbinds', () => {
+        const texture = glContext.createTexture();
+        glContext.texStorage3D(mockGL.TEXTURE_2D!, texture, 2, 0x1908, 8, 8, 4);
+
+        expect(mockGL.bindTexture).toHaveBeenCalledWith(mockGL.TEXTURE_2D, texture);
+        expect(mockGL.texStorage3D).toHaveBeenCalledWith(
+          mockGL.TEXTURE_2D,
+          2,
+          0x1908,
+          8,
+          8,
+          4,
+        );
         expect(mockGL.bindTexture).toHaveBeenCalledWith(mockGL.TEXTURE_2D, null);
       });
     });
@@ -1730,6 +1864,67 @@ describe('GLContext', () => {
         const result = glContext.getTexParameter(mockGL.TEXTURE_2D!, 0x2801);
 
         expect(result).toBeNull();
+      });
+    });
+
+    describe('texImage2DSource', () => {
+      it('binds, uploads image source, and unbinds', () => {
+        const texture = glContext.createTexture();
+        const imageSource = {} as TexImageSource;
+        const RGBA = 0x1908;
+        const UNSIGNED_BYTE = 0x1401;
+
+        glContext.texImage2DSource(
+          mockGL.TEXTURE_2D!,
+          texture,
+          0,
+          RGBA,
+          RGBA,
+          UNSIGNED_BYTE,
+          imageSource,
+        );
+
+        expect(mockGL.bindTexture).toHaveBeenCalledWith(mockGL.TEXTURE_2D, texture);
+        expect(mockGL.texImage2D).toHaveBeenCalledWith(
+          mockGL.TEXTURE_2D,
+          0,
+          RGBA,
+          RGBA,
+          UNSIGNED_BYTE,
+          imageSource,
+        );
+        expect(mockGL.bindTexture).toHaveBeenCalledWith(mockGL.TEXTURE_2D, null);
+      });
+    });
+
+    describe('isTexture', () => {
+      it('returns true for valid texture', () => {
+        const texture = glContext.createTexture();
+        mockGL.isTexture = vi.fn(() => true);
+
+        const result = glContext.isTexture(texture);
+
+        expect(result).toBe(true);
+        expect(mockGL.isTexture).toHaveBeenCalledWith(texture);
+      });
+
+      it('returns false for null', () => {
+        mockGL.isTexture = vi.fn(() => false);
+
+        const result = glContext.isTexture(null);
+
+        expect(result).toBe(false);
+        expect(mockGL.isTexture).toHaveBeenCalledWith(null);
+      });
+
+      it('returns false for deleted texture', () => {
+        const texture = glContext.createTexture();
+        mockGL.deleteTexture(texture);
+        mockGL.isTexture = vi.fn(() => false);
+
+        const result = glContext.isTexture(texture);
+
+        expect(result).toBe(false);
       });
     });
   });

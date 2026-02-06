@@ -17,5 +17,10 @@ export * from './buffers/UniformBuffer.js';
 
 // Placeholder - will be implemented in Phase 1
 // export * from './shaders/Shader.js';
-// export * from './textures/Texture.js';
+
+// Textures
+export * from './textures/index.js';
+
 export * from './VertexArray.js';
+
+export * from './Program.js';

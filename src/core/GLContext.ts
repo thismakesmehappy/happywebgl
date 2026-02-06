@@ -802,6 +802,19 @@ export class GLContext {
   }
 
   /**
+   * Sets the currently active texture unit
+   *
+   * @param unit - Texture unit (0-based)
+   *
+   * @example
+   * glContext.setActiveTextureUnit(3);
+   */
+  setActiveTextureUnit(unit: number): void {
+    this._gl.activeTexture(this._gl.TEXTURE0 + unit);
+    this._checkError('setActiveTextureUnit');
+  }
+
+  /**
    * Unbind a texture from a target
    *
    * @param target - Texture target to unbind from
@@ -933,6 +946,149 @@ export class GLContext {
   }
 
   /**
+   * Specify a 3D texture image
+   *
+   * Binds the texture, uploads image data, and unbinds.
+   */
+  texImage3D(
+    target: GLenum,
+    texture: WebGLTexture,
+    level: GLint,
+    internalFormat: GLint,
+    width: GLsizei,
+    height: GLsizei,
+    depth: GLsizei,
+    border: GLint,
+    format: GLenum,
+    type: GLenum,
+    data?: ArrayBufferView | null,
+  ): void {
+    this._gl.bindTexture(target, texture);
+    this._gl.texImage3D(
+      target,
+      level,
+      internalFormat,
+      width,
+      height,
+      depth,
+      border,
+      format,
+      type,
+      data ?? null,
+    );
+    this._gl.bindTexture(target, null);
+    this._checkError('texImage3D');
+  }
+
+  /**
+   * Update part of a 3D texture image
+   *
+   * Binds the texture, uploads partial image data, and unbinds.
+   */
+  texSubImage3D(
+    target: GLenum,
+    texture: WebGLTexture,
+    level: GLint,
+    xoffset: GLint,
+    yoffset: GLint,
+    zoffset: GLint,
+    width: GLsizei,
+    height: GLsizei,
+    depth: GLsizei,
+    format: GLenum,
+    type: GLenum,
+    data: ArrayBufferView,
+  ): void {
+    this._gl.bindTexture(target, texture);
+    this._gl.texSubImage3D(
+      target,
+      level,
+      xoffset,
+      yoffset,
+      zoffset,
+      width,
+      height,
+      depth,
+      format,
+      type,
+      data,
+    );
+    this._gl.bindTexture(target, null);
+    this._checkError('texSubImage3D');
+  }
+
+  /**
+   * Allocate immutable storage for a 2D texture
+   *
+   * Binds the texture, allocates storage, and unbinds.
+   */
+  texStorage2D(
+    target: GLenum,
+    texture: WebGLTexture,
+    levels: GLsizei,
+    internalFormat: GLenum,
+    width: GLsizei,
+    height: GLsizei,
+  ): void {
+    this._gl.bindTexture(target, texture);
+    this._gl.texStorage2D(target, levels, internalFormat, width, height);
+    this._gl.bindTexture(target, null);
+    this._checkError('texStorage2D');
+  }
+
+  /**
+   * Allocate immutable storage for a 3D texture
+   *
+   * Binds the texture, allocates storage, and unbinds.
+   */
+  texStorage3D(
+    target: GLenum,
+    texture: WebGLTexture,
+    levels: GLsizei,
+    internalFormat: GLenum,
+    width: GLsizei,
+    height: GLsizei,
+    depth: GLsizei,
+  ): void {
+    this._gl.bindTexture(target, texture);
+    this._gl.texStorage3D(target, levels, internalFormat, width, height, depth);
+    this._gl.bindTexture(target, null);
+    this._checkError('texStorage3D');
+  }
+
+  /**
+   * Specify a 2D texture image from an image source
+   *
+   * Binds the texture, uploads image data from HTMLImageElement, HTMLCanvasElement, etc., and unbinds.
+   *
+   * @param target - Texture target (e.g., TEXTURE_2D, TEXTURE_CUBE_MAP_POSITIVE_X)
+   * @param texture - The texture to populate
+   * @param level - Mipmap level (0 for base level)
+   * @param internalFormat - Internal format (e.g., RGB, RGBA)
+   * @param format - Pixel format (e.g., RGB, RGBA)
+   * @param type - Pixel type (e.g., UNSIGNED_BYTE)
+   * @param source - Image source (HTMLImageElement, HTMLCanvasElement, ImageBitmap, etc.)
+   *
+   * @example
+   * glContext.texImage2DSource(glContext.gl.TEXTURE_2D, texture, 0,
+   *   glContext.gl.RGBA, glContext.gl.RGBA, glContext.gl.UNSIGNED_BYTE, imageElement);
+   */
+  texImage2DSource(
+    target: GLenum,
+    texture: WebGLTexture,
+    level: GLint,
+    internalFormat: GLint,
+    format: GLenum,
+    type: GLenum,
+    source: TexImageSource,
+  ): void {
+    this._gl.bindTexture(target, texture);
+    this._gl.texImage2D(target, level, internalFormat, format, type, source);
+    this._gl.bindTexture(target, null);
+    this._checkError('texImage2DSource');
+  }
+
+  /**
    * Get a texture parameter
    *
    * @param target - Texture target
@@ -944,6 +1100,21 @@ export class GLContext {
    */
   getTexParameter(target: GLenum, pname: GLenum): any {
     return this._gl.getTexParameter(target, pname);
+  }
+
+  /**
+   * Checks if the given object is a valid WebGL texture
+   *
+   * @param texture - The object to check
+   * @returns true if the object is a valid WebGL texture
+   *
+   * @example
+   * if (glContext.isTexture(myTexture)) {
+   *   // myTexture is a valid WebGL texture
+   * }
+   */
+  isTexture(texture: WebGLTexture | null): boolean {
+    return this._gl.isTexture(texture);
   }
 
   /**

@@ -44,13 +44,19 @@ This file tracks completed phases and implementation details for reference.
 | IndexBuffer | `src/resources/buffers/IndexBuffer.ts` | 18 |
 | Specialized buffers | `src/resources/buffers/*.ts` | 36 |
 
-### GPU Resources (In Progress)
+### GPU Resources (Complete)
 
 | Feature | File | Tests | Status |
 | --- | --- | --- | --- |
 | Program | `src/resources/Program.ts` | 214 | ✅ Complete |
 | VertexArray | `src/resources/VertexArray.ts` | 43 | ✅ Complete |
-| Texture | `src/resources/Texture.ts` | — | Next |
+| Texture (base) | `src/resources/textures/Texture.ts` | — | ✅ Complete |
+| Texture2D | `src/resources/textures/Texture2D.ts` | 66 | ✅ Complete |
+| TextureCubeMap | `src/resources/textures/TextureCubeMap.ts` | 26 | ✅ Complete |
+| Texture3D | `src/resources/textures/Texture3D.ts` | 30 | ✅ Complete |
+| Texture2DArray | `src/resources/textures/Texture2DArray.ts` | 35 | ✅ Complete |
+
+**Texture Module Coverage:** 99.57% lines | 96.15% branches
 
 ### Error System (Complete)
 
@@ -83,6 +89,34 @@ Data: [col0_row0, col0_row1, col0_row2, col0_row3, col1_row0, ...]
 
 ### Resource Tracking
 GLContext tracks all resources for automatic cleanup on dispose.
+
+### Texture Architecture
+**Module Organization:** `src/resources/textures/` with abstract base + 4 concrete types
+
+| Type | Target | Use Case |
+| --- | --- | --- |
+| Texture2D | TEXTURE_2D | Standard 2D textures, render targets |
+| TextureCubeMap | TEXTURE_CUBE_MAP | Environment maps, skyboxes |
+| Texture3D | TEXTURE_3D | Volume textures |
+| Texture2DArray | TEXTURE_2D_ARRAY | Texture atlases, sprite sheets |
+
+**Common API (all texture types):**
+- `bind(unit)` / `unbind(unit)` - Texture unit binding
+- `setParameters(params)` / `setParametersBound(params)` - Filter/wrap settings
+- `setMinFilter()` / `setMagFilter()` / `setFilter()` - Filter convenience methods
+- `setWrapS()` / `setWrapT()` / `setWrap()` - Wrap convenience methods
+- `generateMipmaps()` - Mipmap generation
+- `allocateStorage()` - Immutable storage allocation
+- `queryBinding(ctx, unit)` - Static GPU state query
+- `dispose()` - Resource cleanup
+
+**Data Upload:**
+- Texture2D: `setImageData()`, `setData()`, `setSubData()`
+- TextureCubeMap: `setFaceImageData()`, `setFaceData()`, `setFaceSubData()`, `setAllFaces()`
+- Texture3D: `setData()`, `setSubData()`
+- Texture2DArray: `setData()`, `setSubData()`, `setLayerData()`
+
+**Note:** Image loading from URL/file is Phase 6 functionality. Current implementation accepts `TexImageSource` (HTMLImageElement, HTMLCanvasElement, etc.).
 
 ### Error Handling Pattern
 ```typescript
