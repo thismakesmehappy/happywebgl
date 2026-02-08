@@ -9,6 +9,8 @@ import { Quaternion } from '../math/quaternions/Quaternion';
 import { Matrix } from '../math';
 import { AppError } from '../errors/AppError.js';
 import { ErrorCode } from '../errors/ErrorCodes.js';
+import { VertexShader } from './shaders/VertexShader.js';
+import { FragmentShader } from './shaders/FragmentShader.js';
 
 /**
  * Program - WebGL program wrapper (Layer 2 GPU resource)
@@ -16,6 +18,11 @@ import { ErrorCode } from '../errors/ErrorCodes.js';
  * A Program is a compiled GPU program consisting of a vertex shader and fragment
  * shader linked together. This is the executable code that runs on the GPU during
  * rendering.
+ *
+ * **Architecture:**
+ * ```
+ * VertexShader + FragmentShader → Program (compiled) → Material (+ uniform values)
+ * ```
  *
  * **WebGL Concept:**
  * In WebGL, creating a shader program requires:
@@ -27,36 +34,36 @@ import { ErrorCode } from '../errors/ErrorCodes.js';
  * This class handles all of that complexity internally.
  *
  * **Lifecycle:**
- * 1. Create: `new Program(ctx, vertexSource, fragmentSource)`
+ * 1. Create: `new Program(ctx, vertexShader, fragmentShader)`
  * 2. Use: `program.use()` to activate it for rendering
  * 3. Set uniforms: `program.setUniform*()` helper methods
  * 4. Render: `ctx.gl.drawArrays(...)`
  * 5. Stop using: `program.unuse()` to deactivate
  * 6. Cleanup: `program.dispose()` when no longer needed
  *
- * **Usage:**
+ * **Primary Usage (with shader objects):**
  * ```typescript
- * const program = new Program(ctx, vertexShaderSource, fragmentShaderSource);
+ * const vertexShader = new VertexShader(vertexSource)
+ *   .declareAttribute('aPosition', GLSLType.Vec3)
+ *   .declareUniform('uMVP', GLSLType.Mat4);
+ *
+ * const fragmentShader = new FragmentShader(fragmentSource)
+ *   .declareUniform('uColor', GLSLType.Vec4);
+ *
+ * const program = new Program(ctx, vertexShader, fragmentShader);
  * program.use();
- *
- * // Set uniforms using helper methods (chainable)
- * program
- *   .setUniform4f('uColor', 1.0, 0.0, 0.0, 1.0)
- *   .setUniformMatrix4fv('uMVP', mvpMatrix);
- *
- * // Or with Vector/Matrix objects
- * program.setUniform3f('uLightPos', lightPosition);  // Vector3
- * program.setUniformMatrix4fv('uModel', modelMatrix); // Matrix4
- *
- * // Set attributes (usually done via VertexArray)
- * const positionLocation = program.getAttributeLocation('aPosition');
- *
- * program.unuse();
- * program.dispose();
+ * program.setUniformMatrix4fv('uMVP', mvpMatrix);
+ * program.setUniform4f('uColor', 1.0, 0.0, 0.0, 1.0);
  * ```
  *
- * @internal This is a Layer 2 resource. Advanced users use this directly.
- * Most users should use Shader.ts (Layer 2.5) for a more user-friendly API.
+ * **Escape Hatch (raw source strings):**
+ * ```typescript
+ * const program = Program.fromSource(ctx, vertexSource, fragmentSource);
+ * ```
+ *
+ * @see VertexShader for vertex shader definition
+ * @see FragmentShader for fragment shader definition
+ * @see Material for combining a program with uniform values
  */
 export class Program {
   /**
@@ -91,53 +98,291 @@ export class Program {
    */
   private _disposed: boolean;
 
+  /**
+   * The vertex shader definition used to create this program
+   * @internal
+   */
+  private _vertexShader: VertexShader;
 
   /**
-   * Creates a new Program from vertex and fragment shader sources
+   * The fragment shader definition used to create this program
+   * @internal
+   */
+  private _fragmentShader: FragmentShader;
+
+  /**
+   * Creates a new Program from vertex and fragment shader definitions
    *
    * The constructor will:
-   * - Compile the vertex shader
-   * - Compile the fragment shader
+   * - Compile the vertex shader from its source
+   * - Compile the fragment shader from its source
    * - Link them into a WebGL program
    * - Delete the shader objects (they're linked into the program)
+   * - Pre-populate location caches from shader declarations
    * - Register with GLContext for cleanup
    *
+   * **Primary Usage (recommended):**
+   * ```typescript
+   * const vertexShader = new VertexShader(vertexSource)
+   *   .declareAttribute('aPosition', GLSLType.Vec3)
+   *   .declareUniform('uMVP', GLSLType.Mat4);
+   *
+   * const fragmentShader = new FragmentShader(fragmentSource)
+   *   .declareUniform('uColor', GLSLType.Vec4);
+   *
+   * const program = new Program(ctx, vertexShader, fragmentShader);
+   * ```
+   *
+   * **Escape Hatch (raw strings):**
+   * For quick prototyping or when shader definitions aren't needed:
+   * ```typescript
+   * const program = Program.fromSource(ctx, vertexSource, fragmentSource);
+   * ```
+   *
    * @param ctx - GLContext to use for program creation
-   * @param vertexSource - GLSL vertex shader source code
-   * @param fragmentSource - GLSL fragment shader source code
+   * @param vertexShader - VertexShader definition with source and declarations
+   * @param fragmentShader - FragmentShader definition with source and declarations
    * @throws Error if shader compilation or program linking fails
    *
    * @example
-   * const vertexShader = `
-   *   attribute vec4 aPosition;
+   * ```typescript
+   * const vs = new VertexShader(`#version 300 es
+   *   in vec3 aPosition;
+   *   uniform mat4 uMVP;
    *   void main() {
-   *     gl_Position = aPosition;
+   *     gl_Position = uMVP * vec4(aPosition, 1.0);
    *   }
-   * `;
-   * const fragmentShader = `
-   *   precision mediump float;
+   * `)
+   *   .declareAttribute('aPosition', GLSLType.Vec3)
+   *   .declareUniform('uMVP', GLSLType.Mat4);
+   *
+   * const fs = new FragmentShader(`#version 300 es
+   *   precision highp float;
    *   uniform vec4 uColor;
+   *   out vec4 fragColor;
    *   void main() {
-   *     gl_FragColor = uColor;
+   *     fragColor = uColor;
    *   }
-   * `;
-   * const program = new Program(ctx, vertexShader, fragmentShader);
+   * `)
+   *   .declareUniform('uColor', GLSLType.Vec4)
+   *   .declareOutput('fragColor', GLSLType.Vec4);
+   *
+   * const program = new Program(ctx, vs, fs);
+   * ```
    */
   constructor(
     ctx: GLContext,
-    vertexSource: string,
-    fragmentSource: string,
+    vertexShader: VertexShader,
+    fragmentShader: FragmentShader,
   ) {
     this._ctx = ctx;
     this._uniformLocations = new Map();
     this._attributeLocations = new Map();
     this._disposed = false;
+    this._vertexShader = vertexShader;
+    this._fragmentShader = fragmentShader;
+
+    // Validate shader compatibility before compilation
+    Program.validateCompatibility(vertexShader, fragmentShader);
 
     // Use GLContext's shader compilation and linking
-    this._program = ctx.createProgram(vertexSource, fragmentSource);
+    this._program = ctx.createProgram(vertexShader.source, fragmentShader.source);
 
     // Register with GLContext for cleanup tracking
     ctx.registerProgram(this._program);
+
+    // Pre-populate location caches from shader declarations
+    this._populateLocationsFromDeclarations();
+  }
+
+  /**
+   * Creates a Program from raw GLSL source strings (escape hatch)
+   *
+   * This factory method provides a simpler API when you don't need shader
+   * introspection or declarations. It creates minimal VertexShader and
+   * FragmentShader objects internally.
+   *
+   * **When to use:**
+   * - Quick prototyping
+   * - Simple shaders where declarations aren't needed
+   * - Migrating from raw WebGL code
+   *
+   * **When to use constructor instead:**
+   * - You want type-safe uniform/attribute declarations
+   * - You need shader introspection
+   * - You're building reusable materials
+   * - You want compile-time validation of shader interfaces
+   *
+   * @param ctx - GLContext to use for program creation
+   * @param vertexSource - GLSL vertex shader source code
+   * @param fragmentSource - GLSL fragment shader source code
+   * @returns A new Program instance
+   * @throws Error if shader compilation or program linking fails
+   *
+   * @example
+   * ```typescript
+   * const program = Program.fromSource(ctx,
+   *   `#version 300 es
+   *    in vec3 aPosition;
+   *    void main() { gl_Position = vec4(aPosition, 1.0); }`,
+   *   `#version 300 es
+   *    precision highp float;
+   *    out vec4 fragColor;
+   *    void main() { fragColor = vec4(1.0, 0.0, 0.0, 1.0); }`
+   * );
+   * ```
+   */
+  static fromSource(
+    ctx: GLContext,
+    vertexSource: string,
+    fragmentSource: string,
+  ): Program {
+    return new Program(
+      ctx,
+      new VertexShader(vertexSource),
+      new FragmentShader(fragmentSource),
+    );
+  }
+
+  /**
+   * Validates compatibility between vertex and fragment shaders
+   *
+   * This static method checks that the shaders can be linked together:
+   * - All fragment shader varyings (inputs) are provided by vertex shader (outputs)
+   * - Varying types match between vertex and fragment shaders
+   * - Uniforms declared in both shaders have matching types
+   *
+   * **Use cases:**
+   * - Defensive programming before creating a Program
+   * - Validating shader combinations at build/load time
+   * - Unit testing shader compatibility
+   *
+   * **Note on directionality:**
+   * This method only checks that fragment shader inputs are satisfied by vertex
+   * shader outputs. It does NOT check the reverse - vertex shaders are allowed
+   * to output varyings that the fragment shader ignores (WebGL optimizes them
+   * away). If you want to detect unused vertex outputs (e.g., to catch typos),
+   * compare the varying maps manually.
+   *
+   * **Note on declarations:**
+   * This method only validates declared interfaces. The actual GLSL source may
+   * have additional varyings/uniforms not declared via the API. WebGL will
+   * catch those at link time.
+   *
+   * @param vertexShader - The vertex shader definition
+   * @param fragmentShader - The fragment shader definition
+   * @throws AppError with RES_INVALID_ARG if shaders are incompatible
+   *
+   * @example
+   * ```typescript
+   * // Validate before creating program
+   * Program.validateCompatibility(vertexShader, fragmentShader);
+   * const program = new Program(ctx, vertexShader, fragmentShader);
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // Use in tests
+   * expect(() => {
+   *   Program.validateCompatibility(vs, fs);
+   * }).not.toThrow();
+   * ```
+   */
+  static validateCompatibility(
+    vertexShader: VertexShader,
+    fragmentShader: FragmentShader,
+  ): void {
+    // Check that all fragment shader varyings are provided by vertex shader
+    // Note: We intentionally don't check the reverse - vertex shaders can
+    // output varyings that fragment shaders don't use (they get optimized away)
+    for (const [name, fsVarying] of fragmentShader.varyings) {
+      const vsVarying = vertexShader.varyings.get(name);
+
+      if (!vsVarying) {
+        throw new AppError(ErrorCode.RES_INVALID_ARG, {
+          resource: 'Program',
+          method: 'validateCompatibility',
+          detail: `Fragment shader expects varying '${name}' but vertex shader does not output it`,
+        });
+      }
+
+      if (vsVarying.type !== fsVarying.type) {
+        throw new AppError(ErrorCode.RES_INVALID_ARG, {
+          resource: 'Program',
+          method: 'validateCompatibility',
+          detail: `Varying '${name}' type mismatch: vertex outputs ${vsVarying.type}, fragment expects ${fsVarying.type}`,
+        });
+      }
+    }
+
+    // Check that uniforms declared in both shaders have matching types
+    for (const [name, vsUniform] of vertexShader.uniforms) {
+      const fsUniform = fragmentShader.uniforms.get(name);
+
+      if (fsUniform && vsUniform.type !== fsUniform.type) {
+        throw new AppError(ErrorCode.RES_INVALID_ARG, {
+          resource: 'Program',
+          method: 'validateCompatibility',
+          detail: `Uniform '${name}' type mismatch: vertex declares ${vsUniform.type}, fragment declares ${fsUniform.type}`,
+        });
+      }
+    }
+  }
+
+  /**
+   * Pre-populates location caches from shader declarations
+   *
+   * Called after linking to query locations for all declared uniforms
+   * and attributes. This ensures fast access and catches any mismatches
+   * between declarations and actual shader code early.
+   *
+   * @internal
+   */
+  private _populateLocationsFromDeclarations(): void {
+    // Populate attribute locations from vertex shader
+    for (const [name] of this._vertexShader.attributes) {
+      const location = this._ctx.gl.getAttribLocation(this._program, name);
+      this._attributeLocations.set(name, location);
+    }
+
+    // Populate uniform locations from vertex shader
+    for (const [name] of this._vertexShader.uniforms) {
+      const location = this._ctx.gl.getUniformLocation(this._program, name);
+      this._uniformLocations.set(name, location);
+    }
+
+    // Populate uniform locations from fragment shader
+    for (const [name] of this._fragmentShader.uniforms) {
+      // Don't overwrite if already set (shared uniforms)
+      if (!this._uniformLocations.has(name)) {
+        const location = this._ctx.gl.getUniformLocation(this._program, name);
+        this._uniformLocations.set(name, location);
+      }
+    }
+  }
+
+  /**
+   * Gets the vertex shader definition used to create this program
+   *
+   * Use this for introspection - checking what attributes and uniforms
+   * the vertex shader expects.
+   *
+   * @returns The VertexShader definition
+   */
+  get vertexShader(): VertexShader {
+    return this._vertexShader;
+  }
+
+  /**
+   * Gets the fragment shader definition used to create this program
+   *
+   * Use this for introspection - checking what uniforms and outputs
+   * the fragment shader uses.
+   *
+   * @returns The FragmentShader definition
+   */
+  get fragmentShader(): FragmentShader {
+    return this._fragmentShader;
   }
 
   /**

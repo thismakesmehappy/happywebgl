@@ -15,8 +15,8 @@ export * from './buffers/PixelUnpackBuffer.js';
 export * from './buffers/TransformFeedbackBuffer.js';
 export * from './buffers/UniformBuffer.js';
 
-// Placeholder - will be implemented in Phase 1
-// export * from './shaders/Shader.js';
+// Shader definitions (for Program creation)
+export * from './shaders/index.js';
 
 // Textures
 export * from './textures/index.js';

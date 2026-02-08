@@ -1,8 +1,8 @@
-/# Claude Development Guide
+# Claude Development Guide
 
 **Project:** WebGL Graphics Library
 **Phase:** 1 - Core MVP (Layer 2 GPU Resources)
-**Tests:** 1,963 passing | 99.57% lines | 96.15% branch (textures)
+**Tests:** 2,049 passing | 100% lines (shaders) | 100% branch (shaders)
 
 ---
 
@@ -11,7 +11,8 @@
 **Next:** TBD (Layer 2 GPU resources complete)
 
 **Completed this phase:**
-- Program.ts (214 tests) - shader program wrapper with uniform setters
+- shaders/ module (33 tests) - Shader, VertexShader, FragmentShader, GLSLType
+- Program.ts (225 tests) - shader program wrapper with uniform setters, validateCompatibility
 - VertexArray.ts (43 tests) - VAO wrapper with attribute configuration
 - errors/ module (10 tests) - AppError, ErrorCodes, message formatting
 - textures/ module (157 tests) - Texture2D, TextureCubeMap, Texture3D, Texture2DArray
@@ -53,7 +54,7 @@ npm test -- --reporter=dot            # Minimal output (use for large failures)
 ```
 src/
 ├── core/           # GLContext, Canvas, Renderer, WebGLState
-├── resources/      # Program, VertexArray, buffers/, textures/
+├── resources/      # Program, VertexArray, buffers/, textures/, shaders/
 ├── errors/         # AppError, ErrorCodes, messages
 └── math/           # vectors/, matrices/, quaternions/
 ```

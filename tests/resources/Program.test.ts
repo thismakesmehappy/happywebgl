@@ -8,7 +8,10 @@ import { Matrix2 } from '../../src/math/matrices/Matrix2.js';
 import { Matrix3 } from '../../src/math/matrices/Matrix3.js';
 import { Matrix4 } from '../../src/math/matrices/Matrix4.js';
 import { Quaternion } from '../../src/math/quaternions/Quaternion.js';
-import {createMatrixPair} from "../helpers/math/createMatrixPair";
+import { VertexShader } from '../../src/resources/shaders/VertexShader.js';
+import { FragmentShader } from '../../src/resources/shaders/FragmentShader.js';
+import { GLSLType } from '../../src/resources/shaders/GLSLType.js';
+import { createMatrixPair } from '../helpers/math/createMatrixPair.js';
 
 /**
  * Test suite for Program (WebGL shader program wrapper)
@@ -30,18 +33,19 @@ describe('Program', () => {
   let mockGL: any;
   let mockProgram: WebGLProgram;
 
-  const validVertexShader = `
-    attribute vec4 aPosition;
+  const validVertexShader = `#version 300 es
+    in vec4 aPosition;
     void main() {
       gl_Position = aPosition;
     }
   `;
 
-  const validFragmentShader = `
+  const validFragmentShader = `#version 300 es
     precision mediump float;
     uniform vec4 uColor;
+    out vec4 fragColor;
     void main() {
-      gl_FragColor = uColor;
+      fragColor = uColor;
     }
   `;
 
@@ -147,7 +151,7 @@ describe('Program', () => {
 
   describe('Constructor', () => {
     it('creates a program with vertex and fragment shaders', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -163,7 +167,7 @@ describe('Program', () => {
     });
 
     it('initializes location caches as empty', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -177,8 +181,27 @@ describe('Program', () => {
       expect(mockGL.getUniformLocation).toHaveBeenCalledTimes(1);
     });
 
+    it('does not re-query shared uniform locations', () => {
+      const vs = new VertexShader(validVertexShader).declareUniform(
+        'uShared',
+        GLSLType.Float,
+      );
+      const fs = new FragmentShader(validFragmentShader).declareUniform(
+        'uShared',
+        GLSLType.Float,
+      );
+
+      new Program(mockGLContext as GLContext, vs, fs);
+
+      expect(mockGL.getUniformLocation).toHaveBeenCalledTimes(1);
+      expect(mockGL.getUniformLocation).toHaveBeenCalledWith(
+        mockProgram,
+        'uShared',
+      );
+    });
+
     it('marks program as not disposed initially', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -191,7 +214,7 @@ describe('Program', () => {
 
   describe('program accessor', () => {
     it('returns the underlying WebGL program', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -201,7 +224,7 @@ describe('Program', () => {
     });
 
     it('throws error if program has been disposed', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -215,7 +238,7 @@ describe('Program', () => {
 
   describe('Program.queryCurrentProgram()', () => {
     it('returns the currently active program from WebGL', () => {
-      const program1 = new Program(
+      const program1 = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -239,9 +262,148 @@ describe('Program', () => {
     });
   });
 
+  describe('Program.validateCompatibility()', () => {
+    describe('Varying validation', () => {
+      it('passes when varyings match between shaders', () => {
+        const vs = new VertexShader(validVertexShader)
+          .declareVarying('vColor', GLSLType.Vec4)
+          .declareVarying('vNormal', GLSLType.Vec3);
+
+        const fs = new FragmentShader(validFragmentShader)
+          .declareVarying('vColor', GLSLType.Vec4)
+          .declareVarying('vNormal', GLSLType.Vec3);
+
+        expect(() => Program.validateCompatibility(vs, fs)).not.toThrow();
+      });
+
+      it('passes when fragment shader uses subset of vertex varyings', () => {
+        const vs = new VertexShader(validVertexShader)
+          .declareVarying('vColor', GLSLType.Vec4)
+          .declareVarying('vNormal', GLSLType.Vec3)
+          .declareVarying('vTexCoord', GLSLType.Vec2); // Fragment doesn't use this
+
+        const fs = new FragmentShader(validFragmentShader)
+          .declareVarying('vColor', GLSLType.Vec4)
+          .declareVarying('vNormal', GLSLType.Vec3);
+
+        // Should pass - vertex can output varyings that fragment ignores
+        expect(() => Program.validateCompatibility(vs, fs)).not.toThrow();
+      });
+
+      it('throws when fragment expects varying not provided by vertex', () => {
+        const vs = new VertexShader(validVertexShader)
+          .declareVarying('vColor', GLSLType.Vec4);
+
+        const fs = new FragmentShader(validFragmentShader)
+          .declareVarying('vColor', GLSLType.Vec4)
+          .declareVarying('vNormal', GLSLType.Vec3); // Not in vertex shader
+
+        expect(() => Program.validateCompatibility(vs, fs)).toThrow(
+          "Fragment shader expects varying 'vNormal' but vertex shader does not output it",
+        );
+      });
+
+      it('throws when varying types mismatch', () => {
+        const vs = new VertexShader(validVertexShader)
+          .declareVarying('vColor', GLSLType.Vec3); // vec3 in vertex
+
+        const fs = new FragmentShader(validFragmentShader)
+          .declareVarying('vColor', GLSLType.Vec4); // vec4 in fragment
+
+        expect(() => Program.validateCompatibility(vs, fs)).toThrow(
+          "Varying 'vColor' type mismatch: vertex outputs vec3, fragment expects vec4",
+        );
+      });
+
+      it('passes with no varyings declared', () => {
+        const vs = new VertexShader(validVertexShader);
+        const fs = new FragmentShader(validFragmentShader);
+
+        expect(() => Program.validateCompatibility(vs, fs)).not.toThrow();
+      });
+    });
+
+    describe('Uniform validation', () => {
+      it('passes when uniforms are only in one shader', () => {
+        const vs = new VertexShader(validVertexShader)
+          .declareUniform('uMVP', GLSLType.Mat4);
+
+        const fs = new FragmentShader(validFragmentShader)
+          .declareUniform('uColor', GLSLType.Vec4);
+
+        expect(() => Program.validateCompatibility(vs, fs)).not.toThrow();
+      });
+
+      it('passes when shared uniforms have matching types', () => {
+        const vs = new VertexShader(validVertexShader)
+          .declareUniform('uTime', GLSLType.Float);
+
+        const fs = new FragmentShader(validFragmentShader)
+          .declareUniform('uTime', GLSLType.Float);
+
+        expect(() => Program.validateCompatibility(vs, fs)).not.toThrow();
+      });
+
+      it('throws when shared uniform types mismatch', () => {
+        const vs = new VertexShader(validVertexShader)
+          .declareUniform('uValue', GLSLType.Float);
+
+        const fs = new FragmentShader(validFragmentShader)
+          .declareUniform('uValue', GLSLType.Int);
+
+        expect(() => Program.validateCompatibility(vs, fs)).toThrow(
+          "Uniform 'uValue' type mismatch: vertex declares float, fragment declares int",
+        );
+      });
+    });
+
+    describe('Constructor integration', () => {
+      it('validates compatibility on construction', () => {
+        const vs = new VertexShader(validVertexShader)
+          .declareVarying('vColor', GLSLType.Vec4);
+
+        const fs = new FragmentShader(validFragmentShader)
+          .declareVarying('vMissing', GLSLType.Vec3); // Not in vertex
+
+        expect(() => new Program(mockGLContext as GLContext, vs, fs)).toThrow(
+          "Fragment shader expects varying 'vMissing' but vertex shader does not output it",
+        );
+      });
+
+      it('constructor succeeds with compatible shaders', () => {
+        const vs = new VertexShader(validVertexShader)
+          .declareVarying('vColor', GLSLType.Vec4)
+          .declareUniform('uMVP', GLSLType.Mat4);
+
+        const fs = new FragmentShader(validFragmentShader)
+          .declareVarying('vColor', GLSLType.Vec4)
+          .declareUniform('uColor', GLSLType.Vec4);
+
+        expect(() => new Program(mockGLContext as GLContext, vs, fs)).not.toThrow();
+      });
+    });
+
+    describe('Defensive programming use case', () => {
+      it('allows pre-validation before program creation', () => {
+        const vs = new VertexShader(validVertexShader)
+          .declareVarying('vNormal', GLSLType.Vec3);
+
+        const fs = new FragmentShader(validFragmentShader)
+          .declareVarying('vNormal', GLSLType.Vec3);
+
+        // Validate first (defensive programming pattern)
+        Program.validateCompatibility(vs, fs);
+
+        // Then create (will not throw since we validated)
+        const program = new Program(mockGLContext as GLContext, vs, fs);
+        expect(program).toBeInstanceOf(Program);
+      });
+    });
+  });
+
   describe('use()', () => {
     it('activates the program with gl.useProgram()', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -253,7 +415,7 @@ describe('Program', () => {
     });
 
     it('returns this for method chaining', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -265,7 +427,7 @@ describe('Program', () => {
     });
 
     it('supports method chaining', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -279,7 +441,7 @@ describe('Program', () => {
     });
 
     it('throws error if program has been disposed', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -291,7 +453,7 @@ describe('Program', () => {
     });
 
     it('updates static binding tracker', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -306,7 +468,7 @@ describe('Program', () => {
 
   describe('unuse()', () => {
     it('deactivates the program by calling gl.useProgram(null)', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -321,7 +483,7 @@ describe('Program', () => {
     });
 
     it('returns this for method chaining', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -335,7 +497,7 @@ describe('Program', () => {
     });
 
     it('supports method chaining with dispose', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -349,7 +511,7 @@ describe('Program', () => {
     });
 
     it('throws error if program has been disposed', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -361,7 +523,7 @@ describe('Program', () => {
     });
 
     it('updates static binding tracker', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -377,7 +539,7 @@ describe('Program', () => {
 
   describe('getUniformLocation()', () => {
     it('returns uniform location for existing uniform', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -393,7 +555,7 @@ describe('Program', () => {
     });
 
     it('returns null for non-existent uniform', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -405,7 +567,7 @@ describe('Program', () => {
     });
 
     it('caches uniform locations for fast access', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -421,7 +583,7 @@ describe('Program', () => {
     });
 
     it('caches null results for non-existent uniforms', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -437,7 +599,7 @@ describe('Program', () => {
     });
 
     it('throws error if program has been disposed', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -451,7 +613,7 @@ describe('Program', () => {
     });
 
     it('handles multiple different uniforms', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -470,7 +632,7 @@ describe('Program', () => {
 
   describe('getAttributeLocation()', () => {
     it('returns attribute location for existing attribute', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -486,7 +648,7 @@ describe('Program', () => {
     });
 
     it('returns -1 for non-existent attribute', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -498,7 +660,7 @@ describe('Program', () => {
     });
 
     it('caches attribute locations for fast access', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -514,7 +676,7 @@ describe('Program', () => {
     });
 
     it('caches -1 results for non-existent attributes', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -530,7 +692,7 @@ describe('Program', () => {
     });
 
     it('throws error if program has been disposed', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -544,7 +706,7 @@ describe('Program', () => {
     });
 
     it('handles multiple different attributes', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -563,7 +725,7 @@ describe('Program', () => {
 
   describe('dispose()', () => {
     it('deletes the WebGL program', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -575,7 +737,7 @@ describe('Program', () => {
     });
 
     it('clears location caches', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -599,7 +761,7 @@ describe('Program', () => {
     });
 
     it('marks program as disposed', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -613,7 +775,7 @@ describe('Program', () => {
     });
 
     it('can be called multiple times safely (idempotent)', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -631,7 +793,7 @@ describe('Program', () => {
     });
 
     it('updates binding tracker if this program was active', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -647,7 +809,7 @@ describe('Program', () => {
 
   describe('Integration: Full rendering workflow', () => {
     it('supports complete use -> query -> unused -> dispose cycle', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -673,13 +835,19 @@ describe('Program', () => {
     });
 
     it('supports switching between programs', () => {
-      const program1 = new Program(
+      const mockProgram1 = {} as WebGLProgram;
+      const mockProgram2 = {} as WebGLProgram;
+      (mockGLContext.createProgram as any)
+        .mockImplementationOnce(() => mockProgram1)
+        .mockImplementationOnce(() => mockProgram2);
+
+      const program1 = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
       );
 
-      const program2 = new Program(
+      const program2 = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -687,11 +855,11 @@ describe('Program', () => {
 
       // Use program 1
       program1.use();
-      expect(mockGL.useProgram).toHaveBeenLastCalledWith(mockProgram);
+      expect(mockGL.useProgram).toHaveBeenLastCalledWith(mockProgram1);
 
       // Switch to program 2
       program2.use();
-      expect(mockGL.useProgram).toHaveBeenLastCalledWith(mockProgram);
+      expect(mockGL.useProgram).toHaveBeenLastCalledWith(mockProgram2);
 
       // Deactivate program 2
       program2.unuse();
@@ -699,7 +867,7 @@ describe('Program', () => {
     });
 
     it('allows method chaining throughout lifecycle', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -716,7 +884,7 @@ describe('Program', () => {
 
   describe('Error handling', () => {
     it('throws descriptive error when operations performed on disposed program', () => {
-      const program = new Program(
+      const program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -747,12 +915,12 @@ describe('Program', () => {
         return createCount === 1 ? mockProgram1 : mockProgram2;
       });
 
-      const program1 = new Program(
+      const program1 = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
       );
-      const program2 = new Program(
+      const program2 = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -773,12 +941,12 @@ describe('Program', () => {
         return createCount === 1 ? mockProgram1 : mockProgram2;
       });
 
-      const program1 = new Program(
+      const program1 = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
       );
-      const program2 = new Program(
+      const program2 = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,
@@ -795,7 +963,7 @@ describe('Program', () => {
     let program: Program;
 
     beforeEach(() => {
-      program = new Program(
+      program = Program.fromSource(
         mockGLContext as GLContext,
         validVertexShader,
         validFragmentShader,

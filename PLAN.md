@@ -752,7 +752,60 @@ As the library matures and usage patterns emerge, we may add convenience helpers
 
 ### Potential Helper Categories (if implemented Phase 4+)
 
-#### 1. GLContext State Presets
+#### 1. Shader Composition / Includes
+
+Reusable GLSL code modules using the Three.js ShaderChunk pattern:
+
+```typescript
+// Register reusable chunks
+ShaderChunks.register('lighting', `
+  vec3 calculateDiffuse(vec3 normal, vec3 lightDir, vec3 lightColor) {
+    float diff = max(dot(normal, lightDir), 0.0);
+    return diff * lightColor;
+  }
+  vec3 calculateSpecular(vec3 normal, vec3 lightDir, vec3 viewDir, float shininess) {
+    vec3 reflectDir = reflect(-lightDir, normal);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+    return spec * vec3(1.0);
+  }
+`);
+
+ShaderChunks.register('fog', `
+  vec3 applyFog(vec3 color, float distance, vec3 fogColor, float fogDensity) {
+    float fogFactor = exp(-fogDensity * distance);
+    return mix(fogColor, color, fogFactor);
+  }
+`);
+
+// Use in shaders with #include directive
+const fragmentSource = `#version 300 es
+  precision highp float;
+  #include <lighting>
+  #include <fog>
+
+  void main() {
+    vec3 lit = calculateDiffuse(vNormal, uLightDir, uLightColor);
+    fragColor = vec4(applyFog(lit, vDistance, uFogColor, uFogDensity), 1.0);
+  }
+`;
+
+// Resolve includes before compilation
+const resolved = ShaderChunks.resolve(fragmentSource);
+const shader = new FragmentShader(resolved);
+```
+
+**Common chunks to implement:**
+- `lighting` - diffuse, specular, Phong/Blinn-Phong calculations
+- `fog` - linear, exponential, exponential squared
+- `normals` - normal mapping, TBN matrix construction
+- `skinning` - bone transforms for skeletal animation
+- `shadows` - shadow mapping, PCF filtering
+
+**Implementation:** `src/resources/shaders/ShaderChunks.ts`
+
+**Reference:** Three.js ShaderChunk pattern
+
+#### 2. GLContext State Presets
 
 Common rendering scenarios that bundle state configurations:
 
