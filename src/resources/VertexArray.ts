@@ -1,6 +1,7 @@
 import { GLContext } from '../core';
 import { AppError } from '../errors/AppError.js';
 import { ErrorCode } from '../errors/ErrorCodes.js';
+import { validate } from '../utils/validate.js';
 import { BufferTarget } from './buffers/Buffer.js';
 import { IndexBuffer } from './buffers/IndexBuffer.js';
 import { VertexBuffer } from './buffers/VertexBuffer.js';
@@ -152,7 +153,15 @@ export class VertexArray {
     }
 
     const resolvedSize = size ?? buffer.componentSize;
-    this._validateComponentSize(resolvedSize, 'setAttribute');
+    const context = {
+      code: ErrorCode.RES_INVALID_ARG,
+      resource: 'VertexArray',
+      method: 'setAttribute',
+    };
+    validate.number.integer(resolvedSize, context, 'size');
+    validate.number.inRange(resolvedSize, context, 1, 4, {
+      detail: `size must be 1, 2, 3, or 4, got ${resolvedSize}`,
+    });
     this._validateNonNegativeInt(stride, 'setAttribute', 'stride');
     this._validateNonNegativeInt(offset, 'setAttribute', 'offset');
 
@@ -210,12 +219,28 @@ export class VertexArray {
     }
 
     const resolvedSize = size ?? buffer.componentSize;
-    this._validateComponentSize(resolvedSize, 'setIntegerAttribute');
+    const context = {
+      code: ErrorCode.RES_INVALID_ARG,
+      resource: 'VertexArray',
+      method: 'setIntegerAttribute',
+    };
+    validate.number.integer(resolvedSize, context, 'size');
+    validate.number.inRange(resolvedSize, context, 1, 4, {
+      detail: `size must be 1, 2, 3, or 4, got ${resolvedSize}`,
+    });
     this._validateNonNegativeInt(stride, 'setIntegerAttribute', 'stride');
     this._validateNonNegativeInt(offset, 'setIntegerAttribute', 'offset');
 
     const glType = type ?? this._ctx.gl.INT;
-    this._validateIntegerAttributeType(glType, 'setIntegerAttribute');
+    const gl = this._ctx.gl;
+    validate.set.oneOf(
+      glType,
+      [gl.BYTE, gl.UNSIGNED_BYTE, gl.SHORT, gl.UNSIGNED_SHORT, gl.INT, gl.UNSIGNED_INT],
+      context,
+      {
+        detail: `type must be an integer type (BYTE, UNSIGNED_BYTE, SHORT, UNSIGNED_SHORT, INT, UNSIGNED_INT), got ${glType}`,
+      },
+    );
 
     this.bind();
     buffer.bind();
@@ -419,75 +444,15 @@ export class VertexArray {
     methodName: string,
     label: string,
   ): void {
-    if (!Number.isFinite(value)) {
-      throw new AppError(ErrorCode.RES_INVALID_ARG, {
+    validate.number.nonNegativeInt(
+      value,
+      {
+        code: ErrorCode.RES_INVALID_ARG,
         resource: 'VertexArray',
         method: methodName,
-        detail: `${label} must be a finite number, got ${value}`,
-      });
-    }
-    if (!Number.isInteger(value)) {
-      throw new AppError(ErrorCode.RES_INVALID_ARG, {
-        resource: 'VertexArray',
-        method: methodName,
-        detail:
-          `${label} must be an integer, got ${value}. ` +
-          `Use Math.floor(), Math.round(), or Math.trunc() to convert.`,
-      });
-    }
-    if (value < 0) {
-      throw new AppError(ErrorCode.RES_INVALID_ARG, {
-        resource: 'VertexArray',
-        method: methodName,
-        detail: `${label} must be a non-negative integer, got ${value}`,
-      });
-    }
-  }
-
-  /**
-   * Validates that a value is a valid component size (1-4)
-   * @internal
-   */
-  private _validateComponentSize(value: number, methodName: string): void {
-    if (!Number.isFinite(value)) {
-      throw new AppError(ErrorCode.RES_INVALID_ARG, {
-        resource: 'VertexArray',
-        method: methodName,
-        detail: `size must be a finite number, got ${value}`,
-      });
-    }
-    if (!Number.isInteger(value) || value < 1 || value > 4) {
-      throw new AppError(ErrorCode.RES_INVALID_ARG, {
-        resource: 'VertexArray',
-        method: methodName,
-        detail: `size must be 1, 2, 3, or 4, got ${value}`,
-      });
-    }
-  }
-
-  /**
-   * Validates that a value is a valid integer attribute type
-   * @internal
-   */
-  private _validateIntegerAttributeType(
-    glType: GLenum,
-    methodName: string,
-  ): void {
-    const gl = this._ctx.gl;
-    if (
-      glType !== gl.BYTE &&
-      glType !== gl.UNSIGNED_BYTE &&
-      glType !== gl.SHORT &&
-      glType !== gl.UNSIGNED_SHORT &&
-      glType !== gl.INT &&
-      glType !== gl.UNSIGNED_INT
-    ) {
-      throw new AppError(ErrorCode.RES_INVALID_ARG, {
-        resource: 'VertexArray',
-        method: methodName,
-        detail: `type must be an integer type (BYTE, UNSIGNED_BYTE, SHORT, UNSIGNED_SHORT, INT, UNSIGNED_INT), got ${glType}`,
-      });
-    }
+      },
+      label,
+    );
   }
 
   /**

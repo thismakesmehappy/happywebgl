@@ -1,6 +1,6 @@
 import { GLSLType } from './GLSLType';
-import { AppError } from '../../errors/AppError.js';
 import { ErrorCode } from '../../errors/ErrorCodes.js';
+import { validate } from '../../utils/validate.js';
 
 /**
  * Information about a declared uniform variable
@@ -278,13 +278,11 @@ export abstract class Shader {
     methodName: string,
     label: string,
   ): void {
-    if (!Number.isFinite(value)) {
-      throw new AppError(ErrorCode.RES_INVALID_ARG, {
-        resource: this.constructor.name,
-        method: methodName,
-        detail: `${label} must be a finite number, got ${value}`,
-      });
-    }
+    validate.number.finite(value, {
+      code: ErrorCode.RES_INVALID_ARG,
+      resource: this.constructor.name,
+      method: methodName,
+    }, label);
   }
 
   /**
@@ -296,23 +294,11 @@ export abstract class Shader {
     methodName: string,
     label: string,
   ): void {
-    this._validateFinite(value, methodName, label);
-    if (!Number.isInteger(value)) {
-      throw new AppError(ErrorCode.RES_INVALID_ARG, {
-        resource: this.constructor.name,
-        method: methodName,
-        detail:
-          `${label} must be an integer, got ${value}. ` +
-          `Use Math.floor(), Math.round(), or Math.trunc() to convert.`,
-      });
-    }
-    if (value < 0) {
-      throw new AppError(ErrorCode.RES_INVALID_ARG, {
-        resource: this.constructor.name,
-        method: methodName,
-        detail: `${label} must be a non-negative integer, got ${value}`,
-      });
-    }
+    validate.number.nonNegativeInt(value, {
+      code: ErrorCode.RES_INVALID_ARG,
+      resource: this.constructor.name,
+      method: methodName,
+    }, label);
   }
 
   /**
@@ -324,14 +310,11 @@ export abstract class Shader {
     methodName: string,
     label: string,
   ): void {
-    this._validateNonNegativeInt(value, methodName, label);
-    if (value === 0) {
-      throw new AppError(ErrorCode.RES_INVALID_ARG, {
-        resource: this.constructor.name,
-        method: methodName,
-        detail: `${label} must be a positive integer, got ${value}`,
-      });
-    }
+    validate.number.positiveInt(value, {
+      code: ErrorCode.RES_INVALID_ARG,
+      resource: this.constructor.name,
+      method: methodName,
+    }, label);
   }
 
   // ===========================================================================

@@ -24,6 +24,7 @@
  */
 import { AppError } from '../../errors/AppError.js';
 import { ErrorCode } from '../../errors/ErrorCodes.js';
+import { validate } from '../../utils/validate.js';
 
 export abstract class Matrix {
   /**
@@ -62,12 +63,12 @@ export abstract class Matrix {
    * Validates that the elements array size matches the matrix dimensions
    * Called after construction to ensure size correctness
    */
-  protected _validateSize(): void {
+  protected _validateSize(methodName: string): void {
     const expectedSize = this.rows * this.columns;
     if (this._elements.length !== expectedSize) {
       throw new AppError(ErrorCode.MATH_INVALID_ARG, {
         resource: 'Matrix',
-        method: '_validateSize',
+        method: methodName,
         detail:
           `Matrix elements array size mismatch: expected ${expectedSize} elements ` +
           `(${this.rows}x${this.columns}) for ${this.constructor.name}, got ${this._elements.length}`,
@@ -165,7 +166,34 @@ export abstract class Matrix {
    * m.get(0, 0);  // Returns 1 (top-left element of identity)
    */
   get(column: number, row: number): number {
-    this._validateIndices(column, row);
+    validate.number.inRange(
+      column,
+      {
+        code: ErrorCode.MATH_OUT_OF_BOUNDS,
+        resource: 'Matrix',
+        method: 'get',
+      },
+      0,
+      this.columns - 1,
+      {
+        requireFinite: false,
+        detail: `Column index ${column} out of bounds for ${this.constructor.name} (0-${this.columns - 1})`,
+      },
+    );
+    validate.number.inRange(
+      row,
+      {
+        code: ErrorCode.MATH_OUT_OF_BOUNDS,
+        resource: 'Matrix',
+        method: 'get',
+      },
+      0,
+      this.rows - 1,
+      {
+        requireFinite: false,
+        detail: `Row index ${row} out of bounds for ${this.constructor.name} (0-${this.rows - 1})`,
+      },
+    );
     return this._elements[column * this.rows + row]!;
   }
 
@@ -183,29 +211,36 @@ export abstract class Matrix {
    * m.set(0, 0, 5);  // Sets top-left element to 5
    */
   set(column: number, row: number, value: number): this {
-    this._validateIndices(column, row);
+    validate.number.inRange(
+      column,
+      {
+        code: ErrorCode.MATH_OUT_OF_BOUNDS,
+        resource: 'Matrix',
+        method: 'set',
+      },
+      0,
+      this.columns - 1,
+      {
+        requireFinite: false,
+        detail: `Column index ${column} out of bounds for ${this.constructor.name} (0-${this.columns - 1})`,
+      },
+    );
+    validate.number.inRange(
+      row,
+      {
+        code: ErrorCode.MATH_OUT_OF_BOUNDS,
+        resource: 'Matrix',
+        method: 'set',
+      },
+      0,
+      this.rows - 1,
+      {
+        requireFinite: false,
+        detail: `Row index ${row} out of bounds for ${this.constructor.name} (0-${this.rows - 1})`,
+      },
+    );
     this._elements[column * this.rows + row] = value;
     return this;
-  }
-
-  /**
-   * Validates that column and row indices are within bounds
-   */
-  protected _validateIndices(column: number, row: number): void {
-    if (column < 0 || column >= this.columns) {
-      throw new AppError(ErrorCode.MATH_OUT_OF_BOUNDS, {
-        resource: 'Matrix',
-        method: '_validateIndices',
-        detail: `Column index ${column} out of bounds for ${this.constructor.name} (0-${this.columns - 1})`,
-      });
-    }
-    if (row < 0 || row >= this.rows) {
-      throw new AppError(ErrorCode.MATH_OUT_OF_BOUNDS, {
-        resource: 'Matrix',
-        method: '_validateIndices',
-        detail: `Row index ${row} out of bounds for ${this.constructor.name} (0-${this.rows - 1})`,
-      });
-    }
   }
 
   /**
@@ -219,11 +254,11 @@ export abstract class Matrix {
    * Validates that two matrices have the same dimensions
    * Throws an error if they don't match
    */
-  protected _validateSameSize(a: Matrix, b: Matrix): void {
+  protected _validateSameSize(a: Matrix, b: Matrix, methodName: string): void {
     if (!this._areSameSize(a, b)) {
       throw new AppError(ErrorCode.MATH_INVALID_ARG, {
         resource: 'Matrix',
-        method: '_validateSameSize',
+        method: methodName,
         detail:
           `Matrices must have the same size: ${a.constructor.name} (${a.rows}x${a.columns}) and ` +
           `${b.constructor.name} (${b.rows}x${b.columns})`,
@@ -261,7 +296,7 @@ export abstract class Matrix {
    * m1.copy(m2);  // m1 now equals m2
    */
   copy(m: Matrix): this {
-    this._validateSameSize(this, m);
+    this._validateSameSize(this, m, 'copy');
     this._elements.set(m._elements);
     return this;
   }
@@ -280,7 +315,7 @@ export abstract class Matrix {
    * m1.add(m2);  // m1 = m1 + m2
    */
    add(m: Matrix): this {
-    this._validateSameSize(this, m);
+    this._validateSameSize(this, m, 'add');
 
     for (let i = 0; i < this.rows; i++) {
         for (let j = 0; j < this.columns; j++) {
@@ -306,7 +341,7 @@ export abstract class Matrix {
    * m1.add(m2);  // m1 = m1 + m2
    */
      subtract(m: Matrix): this {
-        this._validateSameSize(this, m);
+        this._validateSameSize(this, m, 'subtract');
     
         for (let i = 0; i < this.rows; i++) {
             for (let j = 0; j < this.columns; j++) {
@@ -605,7 +640,7 @@ export abstract class Matrix {
     b: T
   ): T {
     // Create new instance (identity by default)
-    a._validateSameSize(a, b);
+    a._validateSameSize(a, b, 'add');
     const result = new this();
     for (let i = 0; i < a.rows; i++) {
         for (let j = 0; j < a.columns; j++) {
@@ -622,7 +657,7 @@ export abstract class Matrix {
     b: T
   ): T {
     // Create new instance (identity by default)
-    a._validateSameSize(a, b);
+    a._validateSameSize(a, b, 'subtract');
     const result = new this();
     for (let i = 0; i < a.rows; i++) {
         for (let j = 0; j < a.columns; j++) {

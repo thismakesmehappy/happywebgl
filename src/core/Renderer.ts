@@ -11,8 +11,8 @@
  */
 
 import { GLContext } from './GLContext.js';
-import { AppError } from '../errors/AppError.js';
 import { ErrorCode } from '../errors/ErrorCodes.js';
+import { validate } from '../utils/validate.js';
 
 /**
  * Base renderer class providing common rendering interface
@@ -57,7 +57,17 @@ export abstract class Renderer {
     this._height = height;
     this._clearColor = { r: 0, g: 0, b: 0, a: 1 };
 
-    this._validateDimensions(width, height);
+    const validationContext = {
+      code: ErrorCode.CORE_INVALID_ARG,
+      resource: 'Renderer',
+      method: 'constructor',
+    };
+    validate.number.positive(width, validationContext, {
+      detail: `Invalid width: ${width}. Width must be a positive number.`,
+    });
+    validate.number.positive(height, validationContext, {
+      detail: `Invalid height: ${height}. Height must be a positive number.`,
+    });
   }
 
   /**
@@ -99,7 +109,17 @@ export abstract class Renderer {
    * renderer.setSize(1024, 768);
    */
   setSize(width: number, height: number): void {
-    this._validateDimensions(width, height);
+    const context = {
+      code: ErrorCode.CORE_INVALID_ARG,
+      resource: 'Renderer',
+      method: 'setSize',
+    };
+    validate.number.positive(width, context, {
+      detail: `Invalid width: ${width}. Width must be a positive number.`,
+    });
+    validate.number.positive(height, context, {
+      detail: `Invalid height: ${height}. Height must be a positive number.`,
+    });
     this._width = width;
     this._height = height;
     this._context.setSize(width, height);
@@ -117,7 +137,17 @@ export abstract class Renderer {
    * renderer.setClearColor(0.2, 0.2, 0.2, 1.0);
    */
   setClearColor(r: number, g: number, b: number, a: number = 1.0): void {
-    this._validateColor(r, g, b, a);
+    const colors = { r, g, b, a };
+    const context = {
+      code: ErrorCode.CORE_INVALID_ARG,
+      resource: 'Renderer',
+      method: 'setClearColor',
+    };
+    for (const [name, value] of Object.entries(colors)) {
+      validate.number.inRange(value, context, 0, 1, {
+        detail: `Invalid color component ${name}: ${value}. Must be between 0 and 1.`,
+      });
+    }
     this._clearColor = { r, g, b, a };
     this._context.setClearColor(r, g, b, a);
   }
@@ -154,53 +184,4 @@ export abstract class Renderer {
    */
   abstract dispose(): void;
 
-  /**
-   * Validates that dimensions are positive
-   *
-   * @param width - Width to validate
-   * @param height - Height to validate
-   * @throws Error if either dimension is invalid
-   *
-   * @internal
-   */
-  protected _validateDimensions(width: number, height: number): void {
-    if (!Number.isFinite(width) || width <= 0) {
-      throw new AppError(ErrorCode.CORE_INVALID_ARG, {
-        resource: 'Renderer',
-        method: '_validateDimensions',
-        detail: `Invalid width: ${width}. Width must be a positive number.`,
-      });
-    }
-    if (!Number.isFinite(height) || height <= 0) {
-      throw new AppError(ErrorCode.CORE_INVALID_ARG, {
-        resource: 'Renderer',
-        method: '_validateDimensions',
-        detail: `Invalid height: ${height}. Height must be a positive number.`,
-      });
-    }
-  }
-
-  /**
-   * Validates that color components are in range [0, 1]
-   *
-   * @param r - Red component
-   * @param g - Green component
-   * @param b - Blue component
-   * @param a - Alpha component
-   * @throws Error if any component is invalid
-   *
-   * @internal
-   */
-  protected _validateColor(r: number, g: number, b: number, a: number): void {
-    const colors = { r, g, b, a };
-    for (const [name, value] of Object.entries(colors)) {
-      if (!Number.isFinite(value) || value < 0 || value > 1) {
-        throw new AppError(ErrorCode.CORE_INVALID_ARG, {
-          resource: 'Renderer',
-          method: '_validateColor',
-          detail: `Invalid color component ${name}: ${value}. Must be between 0 and 1.`,
-        });
-      }
-    }
-  }
 }

@@ -81,7 +81,7 @@ export class Matrix3 extends SquareMatrix {
     super(...elements);
     
     // Validate size after super() call
-    this._validateSize();
+    this._validateSize('constructor');
     
     // Set up Proxy-based indexing using base class helper
     return this._setupProxy();

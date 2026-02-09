@@ -31,6 +31,7 @@
  */
 import { AppError } from '../../errors/AppError.js';
 import { ErrorCode } from '../../errors/ErrorCodes.js';
+import { validate } from '../../utils/validate.js';
 
 export abstract class Vector {
   /**
@@ -88,20 +89,39 @@ export abstract class Vector {
   }
 
   get(index: number): number | undefined {
-    this._validateIndex(index);
-    if (index < 0 || index >= this._components.length) {
-      throw new AppError(ErrorCode.MATH_OUT_OF_BOUNDS, {
+    validate.number.inRange(
+      index,
+      {
+        code: ErrorCode.MATH_OUT_OF_BOUNDS,
         resource: 'Vector',
         method: 'get',
-        detail: 'Index out of bounds',
-      });
-    }
+      },
+      0,
+      this._components.length - 1,
+      {
+        requireFinite: false,
+        detail: `Index out of bounds for ${this.constructor.name} of size ${this._components.length}`,
+      },
+    );
 
     return this._components[index];
   }
 
   set(index: number, value: number): void {
-    this._validateIndex(index);
+    validate.number.inRange(
+      index,
+      {
+        code: ErrorCode.MATH_OUT_OF_BOUNDS,
+        resource: 'Vector',
+        method: 'set',
+      },
+      0,
+      this._components.length - 1,
+      {
+        requireFinite: false,
+        detail: `Index out of bounds for ${this.constructor.name} of size ${this._components.length}`,
+      },
+    );
     this._components[index] = value;
   }
 
@@ -121,7 +141,7 @@ export abstract class Vector {
    * v1.add(v2);  // v1 is now (5, 7, 9)
    */
   add(v: Vector): this {
-    this._validateSameSize(this, v);
+    this._validateSameSize(this, v, 'add');
 
     for (let i = 0; i < this._components.length; i++) {
       this._components[i] = this._components[i]! + v._components[i]!;
@@ -146,7 +166,7 @@ export abstract class Vector {
    * const v3 = Vector3.add(v1, v2);  // Returns Vector3, neither v1 nor v2 changed
    */
   static add<T extends Vector>(a: T, b: T): T {
-    a._validateSameSize(a, b);
+    a._validateSameSize(a, b, 'add');
 
     const components = new Float32Array(a._components.length);
     for (let i = 0; i < a._components.length; i++) {
@@ -217,7 +237,7 @@ export abstract class Vector {
    * v1.subtract(v2);  // v1 is now (1, 2, 3)
    */
   subtract(v: Vector): this {
-    this._validateSameSize(this, v);
+    this._validateSameSize(this, v, 'subtract');
 
     for (let i = 0; i < this._components.length; i++) {
       this._components[i] = this._components[i]! - v._components[i]!;
@@ -242,7 +262,7 @@ export abstract class Vector {
    * const v3 = Vector3.subtract(v1, v2);  // Returns Vector3, v3 is (1, 2, 3), v1 and v2 unchanged
    */
   static subtract<T extends Vector>(a: T, b: T): T {
-    a._validateSameSize(a, b);
+    a._validateSameSize(a, b, 'subtract');
 
     const components = new Float32Array(a._components.length);
     for (let i = 0; i < a._components.length; i++) {
@@ -405,7 +425,7 @@ export abstract class Vector {
    * v1.lerp(v2, 0.5);  // v1 is now (5, 10, 15)
    */
   lerp(v: Vector, t: number): this {
-    this._validateSameSize(this, v);
+    this._validateSameSize(this, v, 'lerp');
 
     const oneMinusT = 1 - t;
     for (let i = 0; i < this._components.length; i++) {
@@ -437,7 +457,7 @@ export abstract class Vector {
    * const v3 = Vector3.lerp(v1, v2, 0.5);  // Returns Vector3, v3 is (5, 10, 15), v1 and v2 unchanged
    */
   static lerp<T extends Vector>(a: T, b: T, t: number): T {
-    a._validateSameSize(a, b);
+    a._validateSameSize(a, b, 'lerp');
 
     const oneMinusT = 1 - t;
     const components = new Float32Array(a._components.length);
@@ -479,7 +499,7 @@ export abstract class Vector {
    * v2.copy(v1);  // v2 is now (1, 2, 3, 4), v1 unchanged
    */
   copy(v: Vector): this {
-    this._validateSameSize(this, v);
+    this._validateSameSize(this, v, 'copy');
     this._components.set(v._components);
     return this;
   }
@@ -609,7 +629,7 @@ export abstract class Vector {
    * const intensity = normal.dot(lightDir);  // cos(angle)
    */
   dot(v: Vector): number {
-    this._validateSameSize(this, v);
+    this._validateSameSize(this, v, 'dot');
     return this._components.reduce((sum, component, index) => sum + component * v._components[index]!, 0);
   }
 
@@ -630,25 +650,8 @@ export abstract class Vector {
    * Vector3.dot(v1, v2);  // Returns 32 (1*4 + 2*5 + 3*6)
    */
   static dot<T extends Vector>(a: T, b: T): number {
-    a._validateSameSize(a, b);
+    a._validateSameSize(a, b, 'dot');
     return a._components.reduce((sum, component, index) => sum + component * b._components[index]!, 0);
-  }
-
-  private _isWithinBounds(index: number): boolean {
-    if (index < 0 || index >= this._components.length) {
-      return false;
-    }
-    return true;
-  }
-
-  private _validateIndex(index: number): void {
-    if (!this._isWithinBounds(index)) {
-      throw new AppError(ErrorCode.MATH_OUT_OF_BOUNDS, {
-        resource: 'Vector',
-        method: '_validateIndex',
-        detail: `Index out of bounds for ${this.constructor.name} of size ${this._components.length}`,
-      });
-    }
   }
 
   /**
@@ -663,11 +666,11 @@ export abstract class Vector {
    * Validates that two vectors have the same size
    * Throws an error if they don't match
    */
-  protected _validateSameSize(a: Vector, b: Vector): void {
+  protected _validateSameSize(a: Vector, b: Vector, methodName: string): void {
     if (!this._areSameSize(a, b)) {
       throw new AppError(ErrorCode.MATH_INVALID_ARG, {
         resource: 'Vector',
-        method: '_validateSameSize',
+        method: methodName,
         detail:
           `Vectors must have the same size: ${a.constructor.name} (size ${a.size}) and ` +
           `${b.constructor.name} (size ${b.size})`,

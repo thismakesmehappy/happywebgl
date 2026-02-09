@@ -29,7 +29,7 @@
 
 ### Layer 2.5: Shader Wrapper 🚧 (Stub Created)
 
-- [ ] `src/resources/Shader.ts` - User-facing wrapper around Program [NEXT]
+- [x] `src/resources/Shader.ts` - User-facing wrapper around Program (100% coverage)
   - Phase 1: Thin wrapper delegating to Program
   - Phase 4+: Reserves space for utilities (load, validate, cache)
 

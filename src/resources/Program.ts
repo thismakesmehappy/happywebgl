@@ -9,6 +9,7 @@ import { Quaternion } from '../math/quaternions/Quaternion';
 import { Matrix } from '../math';
 import { AppError } from '../errors/AppError.js';
 import { ErrorCode } from '../errors/ErrorCodes.js';
+import { validate } from '../utils/validate.js';
 import { VertexShader } from './shaders/VertexShader.js';
 import { FragmentShader } from './shaders/FragmentShader.js';
 
@@ -635,7 +636,15 @@ export class Program {
       throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniform1i');
-    this._validateInt(value, 'setUniform1i');
+    validate.number.integer(
+      value,
+      {
+        code: ErrorCode.RES_INVALID_ARG,
+        resource: 'Program',
+        method: 'setUniform1i',
+      },
+      'Value',
+    );
     const location = this.getUniformLocation(name);
     if (location !== null) {
       this._ctx.gl.uniform1i(location, value);
@@ -658,7 +667,15 @@ export class Program {
       throw new AppError(ErrorCode.RES_DISPOSED, { resource: 'Program' });
     }
     this._validateProgramInUse('setUniform1ui');
-    this._validateUint(value, 'setUniform1ui');
+    validate.number.unsignedInt(
+      value,
+      {
+        code: ErrorCode.RES_INVALID_ARG,
+        resource: 'Program',
+        method: 'setUniform1ui',
+      },
+      'Value',
+    );
     const location = this.getUniformLocation(name);
     if (location !== null) {
       this._ctx.gl.uniform1ui(location, value);
@@ -1766,68 +1783,18 @@ export class Program {
   }
 
   /**
-   * Validates that a value is a valid integer (finite and integer)
-   * @internal
-   * @throws Error if value is not a finite integer
-   */
-  private _validateInt(value: number, methodName: string): void {
-    if (!Number.isFinite(value)) {
-      throw new AppError(ErrorCode.RES_INVALID_ARG, {
-        resource: 'Program',
-        method: methodName,
-        detail: `Value must be a finite number, got ${value}`,
-      });
-    }
-    if (!Number.isInteger(value)) {
-      throw new AppError(ErrorCode.RES_INVALID_ARG, {
-        resource: 'Program',
-        method: methodName,
-        detail:
-          `Value must be an integer, got ${value}. ` +
-          `Use Math.floor(), Math.round(), or Math.trunc() to convert.`,
-      });
-    }
-  }
-
-  /**
    * Validates that all values in an array are valid integers (finite and integer)
    * @internal
    * @throws Error if a is not a finite integer
    */
   private _validateIntArray(values: Float32Array | number[], methodName: string): void {
+    const context = {
+      code: ErrorCode.RES_INVALID_ARG,
+      resource: 'Program',
+      method: methodName,
+    };
     for (const value of values) {
-      this._validateInt(value, methodName);
-    }
-  }
-
-  /**
-   * Validates that a value is a valid unsigned integer (finite, integer, non-negative)
-   * @internal
-   * @throws Error if value is not a valid unsigned integer
-   */
-  private _validateUint(value: number, methodName: string): void {
-    if (!Number.isFinite(value)) {
-      throw new AppError(ErrorCode.RES_INVALID_ARG, {
-        resource: 'Program',
-        method: methodName,
-        detail: `Value must be a finite number, got ${value}`,
-      });
-    }
-    if (!Number.isInteger(value)) {
-      throw new AppError(ErrorCode.RES_INVALID_ARG, {
-        resource: 'Program',
-        method: methodName,
-        detail:
-          `Value must be an integer, got ${value}. ` +
-          `Use Math.floor(), Math.round(), or Math.trunc() to convert.`,
-      });
-    }
-    if (value < 0) {
-      throw new AppError(ErrorCode.RES_INVALID_ARG, {
-        resource: 'Program',
-        method: methodName,
-        detail: `Value must be non-negative for unsigned integer, got ${value}`,
-      });
+      validate.number.integer(value, context, 'Value');
     }
   }
 
@@ -1837,8 +1804,13 @@ export class Program {
    * @throws Error if a is not a finite integer
    */
   private _validateUintArray(values: Float32Array | number[], methodName: string): void {
+    const context = {
+      code: ErrorCode.RES_INVALID_ARG,
+      resource: 'Program',
+      method: methodName,
+    };
     for (const value of values) {
-      this._validateUint(value, methodName);
+      validate.number.unsignedInt(value, context, 'Value');
     }
   }
 

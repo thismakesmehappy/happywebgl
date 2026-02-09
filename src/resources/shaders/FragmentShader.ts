@@ -2,6 +2,7 @@ import { GLSLType } from './GLSLType';
 import { Shader } from './Shader';
 import { AppError } from '../../errors/AppError.js';
 import { ErrorCode } from '../../errors/ErrorCodes.js';
+import { validate } from '../../utils/validate.js';
 
 /**
  * Information about a fragment shader output
@@ -149,7 +150,12 @@ export class FragmentShader extends Shader {
    * ```
    */
   declareOutput(name: string, type: GLSLType, location: number = 0): this {
-    this._validateNonNegativeInt(location, 'declareOutput', 'location');
+    const context = {
+      code: ErrorCode.RES_INVALID_ARG,
+      resource: 'FragmentShader',
+      method: 'declareOutput',
+    };
+    validate.number.nonNegativeInt(location, context, 'location');
 
     this._outputs.set(name, { name, type, location });
     return this;
@@ -196,11 +202,12 @@ export class FragmentShader extends Shader {
    */
   validateOutputs(maxDrawBuffers?: number): void {
     if (maxDrawBuffers !== undefined) {
-      this._validatePositiveInt(
-        maxDrawBuffers,
-        'validateOutputs',
-        'maxDrawBuffers',
-      );
+      const context = {
+        code: ErrorCode.RES_INVALID_ARG,
+        resource: 'FragmentShader',
+        method: 'validateOutputs',
+      };
+      validate.number.positiveInt(maxDrawBuffers, context, 'maxDrawBuffers');
     }
 
     const usedLocations = new Map<number, string>();

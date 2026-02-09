@@ -14,6 +14,7 @@
 import { GLContext } from '../../core/GLContext.js';
 import { AppError } from '../../errors/AppError.js';
 import { ErrorCode } from '../../errors/ErrorCodes.js';
+import { validate } from '../../utils/validate.js';
 
 /**
  * Minification filter modes
@@ -545,29 +546,15 @@ export abstract class Texture {
     methodName: string,
     label: string,
   ): void {
-    if (!Number.isFinite(value)) {
-      throw new AppError(ErrorCode.RES_INVALID_ARG, {
+    validate.number.nonNegativeInt(
+      value,
+      {
+        code: ErrorCode.RES_INVALID_ARG,
         resource: this._resourceName,
         method: methodName,
-        detail: `${label} must be a finite number, got ${value}`,
-      });
-    }
-    if (!Number.isInteger(value)) {
-      throw new AppError(ErrorCode.RES_INVALID_ARG, {
-        resource: this._resourceName,
-        method: methodName,
-        detail:
-          `${label} must be an integer, got ${value}. ` +
-          `Use Math.floor(), Math.round(), or Math.trunc() to convert.`,
-      });
-    }
-    if (value < 0) {
-      throw new AppError(ErrorCode.RES_INVALID_ARG, {
-        resource: this._resourceName,
-        method: methodName,
-        detail: `${label} must be a non-negative integer, got ${value}`,
-      });
-    }
+      },
+      label,
+    );
   }
 
   /**
