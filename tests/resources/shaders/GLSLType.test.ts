@@ -5,7 +5,7 @@ import {
   isMatrixType,
   isSamplerType,
   isVectorType,
-} from '../../src/resources/shaders/GLSLType.js';
+} from '../../../src/resources/shaders/GLSLType.js';
 
 describe('GLSLType helpers', () => {
   describe('isSamplerType', () => {

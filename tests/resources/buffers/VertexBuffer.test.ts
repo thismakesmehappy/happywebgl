@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { VertexBuffer, BufferUsage } from '../../src/resources/index.js';
-import { GLContext } from '../../src/core/GLContext.js';
+import { VertexBuffer, BufferUsage } from '../../../src/resources/index.js';
+import { GLContext } from '../../../src/core/GLContext.js';
 
 /**
  * Test suite for VertexBuffer (vertex attribute data specialization)

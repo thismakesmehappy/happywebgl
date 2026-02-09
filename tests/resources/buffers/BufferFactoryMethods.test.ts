@@ -3,16 +3,16 @@ import {
   Buffer,
   BufferTarget,
   BufferUsage,
-} from '../../src/resources/buffers/Buffer.js';
-import { VertexBuffer } from '../../src/resources/buffers/VertexBuffer.js';
-import { IndexBuffer } from '../../src/resources/buffers/IndexBuffer.js';
-import { CopyReadBuffer } from '../../src/resources/buffers/CopyReadBuffer.js';
-import { CopyWriteBuffer } from '../../src/resources/buffers/CopyWriteBuffer.js';
-import { PixelPackBuffer } from '../../src/resources/buffers/PixelPackBuffer.js';
-import { PixelUnpackBuffer } from '../../src/resources/buffers/PixelUnpackBuffer.js';
-import { TransformFeedbackBuffer } from '../../src/resources/buffers/TransformFeedbackBuffer.js';
-import { UniformBuffer } from '../../src/resources/buffers/UniformBuffer.js';
-import { GLContext } from '../../src/core/GLContext.js';
+} from '../../../src/resources/buffers/Buffer.js';
+import { VertexBuffer } from '../../../src/resources/buffers/VertexBuffer.js';
+import { IndexBuffer } from '../../../src/resources/buffers/IndexBuffer.js';
+import { CopyReadBuffer } from '../../../src/resources/buffers/CopyReadBuffer.js';
+import { CopyWriteBuffer } from '../../../src/resources/buffers/CopyWriteBuffer.js';
+import { PixelPackBuffer } from '../../../src/resources/buffers/PixelPackBuffer.js';
+import { PixelUnpackBuffer } from '../../../src/resources/buffers/PixelUnpackBuffer.js';
+import { TransformFeedbackBuffer } from '../../../src/resources/buffers/TransformFeedbackBuffer.js';
+import { UniformBuffer } from '../../../src/resources/buffers/UniformBuffer.js';
+import { GLContext } from '../../../src/core/GLContext.js';
 
 /**
  * Test suite for Buffer factory methods

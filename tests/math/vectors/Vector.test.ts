@@ -14,11 +14,11 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { Vector } from '../../src/math/vectors/Vector.js';
-import { EPSILON } from '../helpers/const.js';
-import { Vector2 } from '../../src/math/vectors/Vector2.js';
-import { Vector3 } from '../../src/math/vectors/Vector3.js';
-import { Vector4 } from '../../src/math/vectors/Vector4.js';
+import { Vector } from '../../../src/math/vectors/Vector.js';
+import { EPSILON } from '../../helpers/const.js';
+import { Vector2 } from '../../../src/math/vectors/Vector2.js';
+import { Vector3 } from '../../../src/math/vectors/Vector3.js';
+import { Vector4 } from '../../../src/math/vectors/Vector4.js';
 
 class TestVector extends Vector {
   constructor(...components: number[]) {

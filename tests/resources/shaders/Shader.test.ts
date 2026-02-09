@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { Shader } from '../../src/resources/shaders/Shader.js';
-import { GLSLType } from '../../src/resources/shaders/GLSLType.js';
+import { Shader } from '../../../src/resources/shaders/Shader.js';
+import { GLSLType } from '../../../src/resources/shaders/GLSLType.js';
 
 const validShaderSource = `#version 300 es
 void main() {}

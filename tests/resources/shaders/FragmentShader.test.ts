@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { FragmentShader } from '../../src/resources/shaders/FragmentShader.js';
-import { GLSLType } from '../../src/resources/shaders/GLSLType.js';
+import { FragmentShader } from '../../../src/resources/shaders/FragmentShader.js';
+import { GLSLType } from '../../../src/resources/shaders/GLSLType.js';
 
 const validFragmentShader = `#version 300 es
 precision mediump float;

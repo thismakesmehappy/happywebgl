@@ -4,10 +4,10 @@ import {
   BufferTarget,
   BufferUsage,
   ElementType,
-} from '../../src/resources/buffers/Buffer.js';
-import { VertexBuffer } from '../../src/resources/buffers/VertexBuffer.js';
-import { IndexBuffer } from '../../src/resources/buffers/IndexBuffer.js';
-import { GLContext } from '../../src/core/GLContext.js';
+} from '../../../src/resources/buffers/Buffer.js';
+import { VertexBuffer } from '../../../src/resources/buffers/VertexBuffer.js';
+import { IndexBuffer } from '../../../src/resources/buffers/IndexBuffer.js';
+import { GLContext } from '../../../src/core/GLContext.js';
 
 /**
  * Test suite for Buffer (GPU buffer abstraction)

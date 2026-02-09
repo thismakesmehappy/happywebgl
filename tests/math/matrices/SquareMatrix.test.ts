@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { Matrix } from '../../src/math/matrices/Matrix.js';
-import { Matrix4 } from '../../src/math/matrices/Matrix4.js';
-import { SquareMatrix } from '../../src/math/matrices/SquareMatrix.js';
-import { createSquareMatrix } from '../helpers/math/createSquareMatrix.js';
-import { createMatrixPair } from '../helpers/math/createMatrixPair.js';
-import { EPSILON } from '../helpers/const.js';
-import { TestSquareMatrixUneven } from '../helpers/math/TestSquareMatrixUneven.js';
+import { Matrix } from '../../../src/math/matrices/Matrix.js';
+import { Matrix4 } from '../../../src/math/matrices/Matrix4.js';
+import { SquareMatrix } from '../../../src/math/matrices/SquareMatrix.js';
+import { createSquareMatrix } from '../../helpers/math/createSquareMatrix.js';
+import { createMatrixPair } from '../../helpers/math/createMatrixPair.js';
+import { EPSILON } from '../../helpers/const.js';
+import { TestSquareMatrixUneven } from '../../helpers/math/TestSquareMatrixUneven.js';
 
 const TestSquareMatrix1 = createSquareMatrix(1);
 const TestSquareMatrix2 = createSquareMatrix(2);

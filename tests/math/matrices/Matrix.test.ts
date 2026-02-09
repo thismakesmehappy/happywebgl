@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { Matrix } from '../../src/math/matrices/Matrix.js';
-import { Matrix4 } from '../../src/math/matrices/Matrix4.js';
-import { TestMatrixWithoutZeroElements } from '../helpers/math/TestMatrixWithoutZeroElements.js';
-import { createMatrixPair } from '../helpers/math/createMatrixPair.js';
+import { Matrix } from '../../../src/math/matrices/Matrix.js';
+import { Matrix4 } from '../../../src/math/matrices/Matrix4.js';
+import { TestMatrixWithoutZeroElements } from '../../helpers/math/TestMatrixWithoutZeroElements.js';
+import { createMatrixPair } from '../../helpers/math/createMatrixPair.js';
 
 const [TestMatrix2x2] = createMatrixPair(2, 2);
 const [TestMatrix3x3] = createMatrixPair(3, 3);

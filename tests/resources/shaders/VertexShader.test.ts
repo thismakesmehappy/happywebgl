@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { VertexShader } from '../../src/resources/shaders/VertexShader.js';
-import { GLSLType } from '../../src/resources/shaders/GLSLType.js';
+import { VertexShader } from '../../../src/resources/shaders/VertexShader.js';
+import { GLSLType } from '../../../src/resources/shaders/GLSLType.js';
 
 const validVertexShader = `#version 300 es
 in vec3 aPosition;

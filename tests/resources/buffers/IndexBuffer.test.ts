@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { IndexBuffer, BufferUsage, BufferTarget } from '../../src/resources/index.js';
-import { GLContext } from '../../src/core/GLContext.js';
+import { IndexBuffer, BufferUsage, BufferTarget } from '../../../src/resources/index.js';
+import { GLContext } from '../../../src/core/GLContext.js';
 
 /**
  * Test suite for IndexBuffer (vertex index data specialization)
