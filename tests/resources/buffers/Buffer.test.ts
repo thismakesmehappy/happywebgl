@@ -664,6 +664,65 @@ describe('Buffer', () => {
     });
   });
 
+  describe('data caching', () => {
+    let buffer: Buffer;
+
+    beforeEach(() => {
+      buffer = new TestBuffer(
+        mockGLContext as GLContext,
+        BufferTarget.ARRAY_BUFFER,
+      );
+    });
+
+    it('caches typed array data from setData and clears rawData', () => {
+      const data = new Float32Array([1, 2, 3]);
+      buffer.setData(data);
+
+      expect(buffer.data).toBe(data);
+      expect(buffer.rawData).toBeNull();
+    });
+
+    it('clears cached data when setData is called with null', () => {
+      const data = new Float32Array([1, 2, 3]);
+      buffer.setData(data);
+      buffer.setData(null);
+
+      expect(buffer.data).toBeNull();
+      expect(buffer.rawData).toBeNull();
+    });
+
+    it('caches raw data from setDataRaw without element type', () => {
+      const raw = new ArrayBuffer(16);
+      buffer.setDataRaw(raw, 4);
+
+      expect(buffer.rawData).toBe(raw);
+      expect(buffer.data).toBeNull();
+    });
+
+    it('creates a typed view when setDataRaw provides element type', () => {
+      const raw = new ArrayBuffer(16);
+      const view = new DataView(raw, 4, 8);
+      buffer.setDataRaw(view, 2, ElementType.USHORT);
+
+      const typed = buffer.data as Uint16Array;
+      expect(typed).toBeInstanceOf(Uint16Array);
+      expect(typed.buffer).toBe(raw);
+      expect(typed.byteOffset).toBe(4);
+      expect(typed.length).toBe(4);
+      expect(buffer.rawData).toBe(view);
+    });
+
+    it('clears raw cache when setData replaces setDataRaw', () => {
+      const raw = new ArrayBuffer(16);
+      buffer.setDataRaw(raw, 4);
+      const data = new Float32Array([1, 2, 3]);
+      buffer.setData(data);
+
+      expect(buffer.data).toBe(data);
+      expect(buffer.rawData).toBeNull();
+    });
+  });
+
   describe('setDataRaw', () => {
     let buffer: Buffer;
 

@@ -126,6 +126,29 @@ const TYPED_ARRAY_INFO = new Map<
   [BigUint64Array, { type: ElementType.BIGUINT64, byteSize: 8 }],
 ]);
 
+type TypedArrayConstructor = new (
+  buffer: ArrayBufferLike,
+  byteOffset?: number,
+  length?: number,
+) => ArrayBufferView;
+
+const ELEMENT_TYPE_INFO: Record<
+  ElementType,
+  { ctor: TypedArrayConstructor; byteSize: number }
+> = {
+  [ElementType.BYTE]: { ctor: Int8Array, byteSize: 1 },
+  [ElementType.UBYTE]: { ctor: Uint8Array, byteSize: 1 },
+  [ElementType.UBYTE_CLAMPED]: { ctor: Uint8ClampedArray, byteSize: 1 },
+  [ElementType.SHORT]: { ctor: Int16Array, byteSize: 2 },
+  [ElementType.USHORT]: { ctor: Uint16Array, byteSize: 2 },
+  [ElementType.INT]: { ctor: Int32Array, byteSize: 4 },
+  [ElementType.UINT]: { ctor: Uint32Array, byteSize: 4 },
+  [ElementType.FLOAT]: { ctor: Float32Array, byteSize: 4 },
+  [ElementType.DOUBLE]: { ctor: Float64Array, byteSize: 8 },
+  [ElementType.BIGINT64]: { ctor: BigInt64Array, byteSize: 8 },
+  [ElementType.BIGUINT64]: { ctor: BigUint64Array, byteSize: 8 },
+};
+
 /**
  * Abstract base class for GPU buffers
  *
@@ -178,6 +201,16 @@ export abstract class Buffer {
    * The WebGL usage hint for this buffer
    */
   protected _usage: BufferUsage;
+
+  /**
+   * Cached CPU-side data (if provided via setData or setDataRaw)
+   */
+  protected _data: ArrayBufferView | null = null;
+
+  /**
+   * Cached raw data (only from setDataRaw)
+   */
+  protected _rawData: ArrayBuffer | DataView | null = null;
 
   /**
    * Factory method: Creates a VertexBuffer (ARRAY_BUFFER)
@@ -456,6 +489,28 @@ export abstract class Buffer {
   }
 
   /**
+   * Gets the cached CPU-side data
+   *
+   * This is populated when setData() is called with a TypedArray, or when
+   * setDataRaw() is called with an elementType that can be interpreted.
+   *
+   * Note: Mutating this data does not update GPU contents until setData()
+   * is called again.
+   */
+  get data(): ArrayBufferView | null {
+    return this._data;
+  }
+
+  /**
+   * Gets the cached raw data
+   *
+   * This is only populated when setDataRaw() is used.
+   */
+  get rawData(): ArrayBuffer | DataView | null {
+    return this._rawData;
+  }
+
+  /**
    * Sets buffer data from a TypedArray, automatically inferring element metadata
    *
    * This is the recommended method for most use cases. It automatically detects
@@ -515,6 +570,8 @@ export abstract class Buffer {
         this._length = (data as any).length;
         this._elementByteSize = info.byteSize;
         this._elementType = info.type;
+        this._data = data;
+        this._rawData = null;
       } else {
         // Unknown ArrayBufferView type (e.g., DataView)
         // We cannot infer element count without additional information
@@ -532,6 +589,8 @@ export abstract class Buffer {
       this._length = 0;
       this._elementByteSize = 0;
       this._elementType = null;
+      this._data = null;
+      this._rawData = null;
     }
 
     // Upload data to GPU
@@ -622,10 +681,23 @@ export abstract class Buffer {
       this._length = byteLength / elementByteSize;
       this._elementByteSize = elementByteSize;
       this._elementType = elementType ?? null;
+      this._rawData = data;
+      if (elementType) {
+        this._data = this._createTypedViewFromRaw(
+          data,
+          elementType,
+          elementByteSize,
+          'setDataRaw',
+        );
+      } else {
+        this._data = null;
+      }
     } else {
       this._length = 0;
       this._elementByteSize = elementByteSize;
       this._elementType = elementType ?? null;
+      this._data = null;
+      this._rawData = null;
     }
 
     // Upload data to GPU
@@ -883,6 +955,50 @@ export abstract class Buffer {
     }
 
     this._uploadDataToBuffer(offset, data);
+  }
+
+  /**
+   * Internal helper: creates a typed view over raw data
+   * @internal
+   */
+  private _createTypedViewFromRaw(
+    data: ArrayBuffer | DataView,
+    elementType: ElementType,
+    elementByteSize: number,
+    methodName: string,
+  ): ArrayBufferView {
+    const info = ELEMENT_TYPE_INFO[elementType];
+    if (!info) {
+      throw new AppError(ErrorCode.RES_INVALID_ARG, {
+        resource: 'Buffer',
+        method: methodName,
+        detail: `unsupported element type ${elementType}`,
+      });
+    }
+
+    if (info.byteSize !== elementByteSize) {
+      throw new AppError(ErrorCode.RES_INVALID_ARG, {
+        resource: 'Buffer',
+        method: methodName,
+        detail:
+          `elementByteSize (${elementByteSize}) does not match elementType (${elementType})`,
+      });
+    }
+
+    const buffer = data instanceof DataView ? data.buffer : data;
+    const byteOffset = data instanceof DataView ? data.byteOffset : 0;
+    const byteLength = data instanceof DataView ? data.byteLength : data.byteLength;
+
+    if (byteOffset % elementByteSize !== 0) {
+      throw new AppError(ErrorCode.RES_INVALID_ARG, {
+        resource: 'Buffer',
+        method: methodName,
+        detail: 'data byteOffset must align to elementByteSize',
+      });
+    }
+
+    const length = byteLength / elementByteSize;
+    return new info.ctor(buffer, byteOffset, length);
   }
 
   /**
