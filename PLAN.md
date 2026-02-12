@@ -113,6 +113,10 @@ src/
 ├── geometry/          # Geometry generation & management (hierarchical organization)
 │   ├── Geometry.ts    # Abstract base class
 │   ├── BufferGeometry.ts # Concrete: geometry with buffer data
+│   ├── spacial/       # Spatial proxies
+│   │   ├── BoundingBox.ts
+│   │   ├── BoundingSphere.ts
+│   │   └── index.ts
 │   ├── primitives/    # Primitive shape generators
 │   │   ├── Primitive.ts # Abstract base
 │   │   ├── Box.ts

@@ -100,6 +100,12 @@ export class Program {
   private _disposed: boolean;
 
   /**
+   * Dispose callbacks registered by external resources
+   * @internal
+   */
+  private _disposeCallbacks: Set<() => void>;
+
+  /**
    * The vertex shader definition used to create this program
    * @internal
    */
@@ -180,6 +186,7 @@ export class Program {
     this._uniformLocations = new Map();
     this._attributeLocations = new Map();
     this._disposed = false;
+    this._disposeCallbacks = new Set();
     this._vertexShader = vertexShader;
     this._fragmentShader = fragmentShader;
 
@@ -384,6 +391,27 @@ export class Program {
    */
   get fragmentShader(): FragmentShader {
     return this._fragmentShader;
+  }
+
+  /**
+   * Whether this program has been disposed
+   */
+  get isDisposed(): boolean {
+    return this._disposed;
+  }
+
+  /**
+   * Registers a callback to run when this program is disposed
+   */
+  registerDisposeCallback(callback: () => void): void {
+    this._disposeCallbacks.add(callback);
+  }
+
+  /**
+   * Unregisters a previously registered dispose callback
+   */
+  unregisterDisposeCallback(callback: () => void): void {
+    this._disposeCallbacks.delete(callback);
   }
 
   /**
@@ -1898,6 +1926,10 @@ export class Program {
 
     // Mark as disposed
     this._disposed = true;
-
+    const callbacks = Array.from(this._disposeCallbacks);
+    this._disposeCallbacks.clear();
+    for (const callback of callbacks) {
+      callback();
+    }
   }
 }

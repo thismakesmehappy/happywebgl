@@ -37,7 +37,7 @@
 
 ### Layer 3: High-Level Concepts 🚧 (Stubs Created)
 
-- [ ] `src/geometry/Geometry.ts` - Base geometry class [BLOCKED: needs Shader]
+- [x] `src/geometry/Geometry.ts` - Base geometry class (100% coverage)
 - [ ] `src/materials/Material.ts` - Material system using Design A [BLOCKED: needs Shader]
   - Material = Shader + Uniforms (each material has own shader)
   - Use Design A as documented in ARCHITECTURE.md
@@ -109,11 +109,19 @@
 - [ ] `src/geometry/primitives/Cylinder.ts`
 - [ ] `src/geometry/primitives/Torus.ts`
 
+### Geometry Utilities
+- [ ] `Geometry.clone()` - Deep copy geometry with all attributes
+- [ ] `Geometry.merge(geometries)` - Combine multiple geometries into one
+- [ ] `Geometry.center()` - Translate vertices so bounding box is at origin
+- [ ] `Geometry.applyMatrix(matrix)` - Transform all vertices by a matrix
+- [ ] `Geometry.flipNormals()` - Reverse winding order and normals
+
 ### Advanced Geometry
 - [ ] `src/geometry/curves/BezierCurve.ts`
 - [ ] `src/geometry/curves/CatmullRomCurve.ts`
 - [ ] `src/geometry/surfaces/Superellipsoid.ts`
 - [ ] `src/geometry/surfaces/RotationalSolid.ts`
+- [ ] Convex hull utilities (2D + 3D)
 
 ### Transform Utilities
 - [ ] `src/utils/Transform.ts` - Transform helpers (translate, rotate, scale, shear)

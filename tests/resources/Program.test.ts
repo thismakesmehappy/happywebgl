@@ -904,6 +904,51 @@ describe('Program', () => {
     });
   });
 
+  describe('Dispose callbacks', () => {
+    it('invokes callbacks on dispose and clears them', () => {
+      const program = Program.fromSource(
+        mockGLContext as GLContext,
+        validVertexShader,
+        validFragmentShader,
+      );
+
+      const callback = vi.fn();
+      program.registerDisposeCallback(callback);
+
+      program.dispose();
+      expect(callback).toHaveBeenCalledTimes(1);
+
+      program.dispose();
+      expect(callback).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not invoke unregistered callbacks', () => {
+      const program = Program.fromSource(
+        mockGLContext as GLContext,
+        validVertexShader,
+        validFragmentShader,
+      );
+
+      const callback = vi.fn();
+      program.registerDisposeCallback(callback);
+      program.unregisterDisposeCallback(callback);
+
+      program.dispose();
+      expect(callback).not.toHaveBeenCalled();
+    });
+
+    it('exposes isDisposed state', () => {
+      const program = Program.fromSource(
+        mockGLContext as GLContext,
+        validVertexShader,
+        validFragmentShader,
+      );
+      expect(program.isDisposed).toBe(false);
+      program.dispose();
+      expect(program.isDisposed).toBe(true);
+    });
+  });
+
   describe('Multiple instances', () => {
     it('each Program instance is independent', () => {
       const mockProgram1 = {} as WebGLProgram;
