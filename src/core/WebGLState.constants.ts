@@ -73,7 +73,9 @@ export const NON_BINARY_CAPABILITIES: Record<string, string> = {
 export const STATE_PARAMETERS = [
   // Blending
   'blendFunc',
+  'blendFuncSeparate',
   'blendEquation',
+  'blendEquationSeparate',
   'blendColor',
 
   // Color
@@ -123,7 +125,9 @@ export const DOCUMENTATION_LINKS: Record<string, string> = {
 
   // Parameters
   'blendFunc': 'https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFunc',
+  'blendFuncSeparate': 'https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFuncSeparate',
   'blendEquation': 'https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendEquation',
+  'blendEquationSeparate': 'https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendEquationSeparate',
   'blendColor': 'https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendColor',
   'clearColor': 'https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/clearColor',
   'depthFunc': 'https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/depthFunc',

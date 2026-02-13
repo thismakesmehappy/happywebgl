@@ -63,7 +63,9 @@ describe('WebGLState Constants Validation', () => {
 
       // State parameter methods
       blendFunc: vi.fn(),
+      blendFuncSeparate: vi.fn(),
       blendEquation: vi.fn(),
+      blendEquationSeparate: vi.fn(),
       blendColor: vi.fn(),
       clearColor: vi.fn(),
       colorMask: vi.fn(),
@@ -231,7 +233,9 @@ describe('WebGLState Constants Validation', () => {
 
     it('includes essential blending parameters', () => {
       expect(STATE_PARAMETERS).toContain('blendFunc');
+      expect(STATE_PARAMETERS).toContain('blendFuncSeparate');
       expect(STATE_PARAMETERS).toContain('blendEquation');
+      expect(STATE_PARAMETERS).toContain('blendEquationSeparate');
       expect(STATE_PARAMETERS).toContain('blendColor');
     });
 

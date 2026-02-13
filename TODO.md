@@ -38,10 +38,10 @@
 ### Layer 3: High-Level Concepts 🚧 (Stubs Created)
 
 - [x] `src/geometry/Geometry.ts` - Base geometry class (100% coverage)
-- [ ] `src/materials/Material.ts` - Material system using Design A [BLOCKED: needs Shader]
+- [x] `src/materials/Material.ts` - Material system using Design A  (100% coverage)
   - Material = Shader + Uniforms (each material has own shader)
   - Use Design A as documented in ARCHITECTURE.md
-- [ ] `src/materials/BasicMaterial.ts` - Default material with flat color [BLOCKED: needs Material]
+- [x] `src/materials/BasicMaterial.ts` - Default material with flat color  (100% coverage)
 
 **Status:** Stubs created, blocked on Layer 2.5
 

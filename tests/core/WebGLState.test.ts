@@ -107,7 +107,9 @@ describe('WebGLState', () => {
       disable: vi.fn(),
       cullFace: vi.fn(),
       blendFunc: vi.fn(),
+      blendFuncSeparate: vi.fn(),
       blendEquation: vi.fn(),
+      blendEquationSeparate: vi.fn(),
       blendColor: vi.fn(),
       depthFunc: vi.fn(),
       depthMask: vi.fn(),
@@ -946,6 +948,248 @@ describe('WebGLState', () => {
       expect(() =>
         stateWithIncompleteGL.setParameter('blendFunc', mockGL.ONE, mockGL.ZERO),
       ).toThrow(/Parameter function 'blendFunc' not found on WebGL context/);
+    });
+  });
+
+  // ===========================================================================
+  // State Stack: Push/Pop
+  // ===========================================================================
+
+  describe('push/pop', () => {
+    it('push saves current state', () => {
+      const state = new WebGLState(mockGL as WebGL2RenderingContext);
+      state.enableBlend();
+      state.enableDepthTest();
+
+      expect(state.stackDepth).toBe(0);
+      state.push();
+      expect(state.stackDepth).toBe(1);
+    });
+
+    it('pop restores binary capabilities', () => {
+      const state = new WebGLState(mockGL as WebGL2RenderingContext);
+
+      // Set initial state
+      state.enableBlend();
+      state.enableDepthTest();
+      state.push();
+
+      // Change state
+      state.disableBlend();
+      state.disableDepthTest();
+      expect(state.isCapabilityEnabled('BLEND')).toBe(false);
+      expect(state.isCapabilityEnabled('DEPTH_TEST')).toBe(false);
+
+      // Restore
+      state.pop();
+      expect(state.isCapabilityEnabled('BLEND')).toBe(true);
+      expect(state.isCapabilityEnabled('DEPTH_TEST')).toBe(true);
+      expect(state.stackDepth).toBe(0);
+    });
+
+    it('pop restores non-binary capabilities', () => {
+      const state = new WebGLState(mockGL as WebGL2RenderingContext);
+
+      state.setCullFaceBack();
+      state.push();
+
+      state.setCullFaceFront();
+      expect(state.getCapability('CULL_FACE')).toBe(mockGL.FRONT);
+
+      state.pop();
+      expect(state.getCapability('CULL_FACE')).toBe(mockGL.BACK);
+    });
+
+    it('pop restores parameters', () => {
+      const state = new WebGLState(mockGL as WebGL2RenderingContext);
+
+      state.setBlendFunc(mockGL.SRC_ALPHA!, mockGL.ONE_MINUS_SRC_ALPHA!);
+      state.setViewport(0, 0, 800, 600);
+      state.push();
+
+      state.setBlendFunc(mockGL.ONE!, mockGL.ZERO!);
+      state.setViewport(0, 0, 400, 300);
+
+      state.pop();
+
+      expect(state.getParameter('blendFunc')).toEqual([
+        mockGL.SRC_ALPHA,
+        mockGL.ONE_MINUS_SRC_ALPHA,
+      ]);
+      expect(state.getParameter('viewport')).toEqual([0, 0, 800, 600]);
+    });
+
+    it('supports nested push/pop', () => {
+      const state = new WebGLState(mockGL as WebGL2RenderingContext);
+
+      state.enableBlend();
+      state.push(); // depth 1
+
+      state.disableBlend();
+      state.enableDepthTest();
+      state.push(); // depth 2
+
+      state.disableDepthTest();
+      expect(state.isCapabilityEnabled('BLEND')).toBe(false);
+      expect(state.isCapabilityEnabled('DEPTH_TEST')).toBe(false);
+      expect(state.stackDepth).toBe(2);
+
+      state.pop(); // back to depth 1
+      expect(state.isCapabilityEnabled('BLEND')).toBe(false);
+      expect(state.isCapabilityEnabled('DEPTH_TEST')).toBe(true);
+      expect(state.stackDepth).toBe(1);
+
+      state.pop(); // back to depth 0
+      expect(state.isCapabilityEnabled('BLEND')).toBe(true);
+      expect(state.stackDepth).toBe(0);
+    });
+
+    it('pop throws on empty stack', () => {
+      const state = new WebGLState(mockGL as WebGL2RenderingContext);
+      expect(() => state.pop()).toThrow(/stack underflow/);
+    });
+
+    it('push throws when stack depth exceeds limit', () => {
+      const state = new WebGLState(mockGL as WebGL2RenderingContext);
+
+      // Push 32 times (the limit)
+      for (let i = 0; i < 32; i++) {
+        state.push();
+      }
+      expect(state.stackDepth).toBe(32);
+
+      // 33rd push should throw
+      expect(() => state.push()).toThrow(/stack overflow/);
+    });
+
+    it('disables new capabilities that were enabled after push', () => {
+      const state = new WebGLState(mockGL as WebGL2RenderingContext);
+
+      // No capabilities enabled initially
+      state.push();
+
+      // Enable some capabilities
+      state.enableBlend();
+      state.enableScissor();
+      expect(state.isCapabilityEnabled('BLEND')).toBe(true);
+      expect(state.isCapabilityEnabled('SCISSOR_TEST')).toBe(true);
+
+      // Pop should disable them (they weren't in snapshot)
+      state.pop();
+      expect(state.isCapabilityEnabled('BLEND')).toBe(false);
+      expect(state.isCapabilityEnabled('SCISSOR_TEST')).toBe(false);
+    });
+
+    it('makes actual WebGL calls on restore', () => {
+      const state = new WebGLState(mockGL as WebGL2RenderingContext);
+
+      state.enableBlend();
+      state.push();
+      state.disableBlend();
+
+      // Clear mock call history
+      vi.mocked(mockGL.enable!).mockClear();
+
+      state.pop();
+
+      // Should have called gl.enable(BLEND)
+      expect(mockGL.enable).toHaveBeenCalledWith(mockGL.BLEND);
+    });
+  });
+
+  // ===========================================================================
+  // scoped()
+  // ===========================================================================
+
+  describe('scoped()', () => {
+    it('automatically pushes and pops', () => {
+      const state = new WebGLState(mockGL as WebGL2RenderingContext);
+
+      state.enableBlend();
+
+      state.scoped(() => {
+        expect(state.stackDepth).toBe(1);
+        state.disableBlend();
+        expect(state.isCapabilityEnabled('BLEND')).toBe(false);
+      });
+
+      expect(state.stackDepth).toBe(0);
+      expect(state.isCapabilityEnabled('BLEND')).toBe(true);
+    });
+
+    it('returns the callback result', () => {
+      const state = new WebGLState(mockGL as WebGL2RenderingContext);
+
+      const result = state.scoped(() => {
+        return 42;
+      });
+
+      expect(result).toBe(42);
+    });
+
+    it('restores state even if callback throws', () => {
+      const state = new WebGLState(mockGL as WebGL2RenderingContext);
+
+      state.enableBlend();
+
+      expect(() => {
+        state.scoped(() => {
+          state.disableBlend();
+          throw new Error('test error');
+        });
+      }).toThrow('test error');
+
+      // State should still be restored
+      expect(state.stackDepth).toBe(0);
+      expect(state.isCapabilityEnabled('BLEND')).toBe(true);
+    });
+
+    it('can be nested', () => {
+      const state = new WebGLState(mockGL as WebGL2RenderingContext);
+
+      state.enableBlend();
+
+      state.scoped(() => {
+        state.disableBlend();
+        state.enableDepthTest();
+
+        state.scoped(() => {
+          state.disableDepthTest();
+          expect(state.isCapabilityEnabled('BLEND')).toBe(false);
+          expect(state.isCapabilityEnabled('DEPTH_TEST')).toBe(false);
+        });
+
+        expect(state.isCapabilityEnabled('DEPTH_TEST')).toBe(true);
+      });
+
+      expect(state.isCapabilityEnabled('BLEND')).toBe(true);
+    });
+  });
+
+  // ===========================================================================
+  // stackDepth
+  // ===========================================================================
+
+  describe('stackDepth', () => {
+    it('returns 0 initially', () => {
+      const state = new WebGLState(mockGL as WebGL2RenderingContext);
+      expect(state.stackDepth).toBe(0);
+    });
+
+    it('increments on push', () => {
+      const state = new WebGLState(mockGL as WebGL2RenderingContext);
+      state.push();
+      expect(state.stackDepth).toBe(1);
+      state.push();
+      expect(state.stackDepth).toBe(2);
+    });
+
+    it('decrements on pop', () => {
+      const state = new WebGLState(mockGL as WebGL2RenderingContext);
+      state.push();
+      state.push();
+      state.pop();
+      expect(state.stackDepth).toBe(1);
     });
   });
 });

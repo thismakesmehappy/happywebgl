@@ -67,6 +67,22 @@ import {
 import { AppError } from '../errors/AppError.js';
 import { ErrorCode } from '../errors/ErrorCodes.js';
 
+/**
+ * A snapshot of WebGLState at a point in time
+ * Used by push/pop for state preservation
+ */
+interface StateSnapshot {
+  capabilities: Map<string, boolean>;
+  nonBinaryCapabilities: Map<string, GLenum>;
+  parameters: Map<string, any[]>;
+}
+
+/**
+ * Maximum depth of the state stack to prevent memory leaks
+ * from unbalanced push/pop calls
+ */
+const MAX_STATE_STACK_DEPTH = 32;
+
 export class WebGLState {
   /**
    * Underlying WebGL 2.0 context
@@ -98,6 +114,12 @@ export class WebGLState {
    * @internal
    */
   private _parameters: Map<string, any[]> = new Map();
+
+  /**
+   * Stack of saved state snapshots for push/pop functionality
+   * @internal
+   */
+  private _stateStack: StateSnapshot[] = [];
 
   /**
    * Creates a new WebGLState manager
@@ -719,6 +741,31 @@ export class WebGLState {
   }
 
   /**
+   * Sets separate blend functions for RGB and alpha
+   *
+   * This allows different blending for color and alpha channels.
+   *
+   * @param srcRGB - Source factor for RGB
+   * @param dstRGB - Destination factor for RGB
+   * @param srcAlpha - Source factor for alpha
+   * @param dstAlpha - Destination factor for alpha
+   *
+   * @example
+   * // Premultiplied alpha (common for textures)
+   * state.setBlendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+   *
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendFuncSeparate
+   */
+  setBlendFuncSeparate(
+    srcRGB: GLenum,
+    dstRGB: GLenum,
+    srcAlpha: GLenum,
+    dstAlpha: GLenum,
+  ): void {
+    this.setParameter('blendFuncSeparate', srcRGB, dstRGB, srcAlpha, dstAlpha);
+  }
+
+  /**
    * Sets the blend equation
    *
    * The blend equation controls the mathematical operation used to combine
@@ -740,6 +787,21 @@ export class WebGLState {
    */
   setBlendEquation(equation: GLenum): void {
     this.setParameter('blendEquation', equation);
+  }
+
+  /**
+   * Sets separate blend equations for RGB and alpha
+   *
+   * @param modeRGB - Blend equation for RGB
+   * @param modeAlpha - Blend equation for alpha
+   *
+   * @example
+   * state.setBlendEquationSeparate(gl.FUNC_ADD, gl.FUNC_ADD);
+   *
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/blendEquationSeparate
+   */
+  setBlendEquationSeparate(modeRGB: GLenum, modeAlpha: GLenum): void {
+    this.setParameter('blendEquationSeparate', modeRGB, modeAlpha);
   }
 
   /**
@@ -1155,6 +1217,221 @@ export class WebGLState {
    */
   setPixelStorei(pname: GLenum, param: number | boolean): void {
     this.setParameter('pixelStorei', pname, param);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // State Stack: Push/Pop for Temporary State Changes
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Pushes the current state onto the stack
+   *
+   * This saves a snapshot of all tracked state (capabilities, parameters)
+   * so it can be restored later with `pop()`. Useful for:
+   * - Temporary render passes with different settings
+   * - UI overlays that need different state
+   * - Debug visualizations
+   * - Post-processing effects
+   *
+   * The stack has a maximum depth of 32 to catch unbalanced push/pop calls.
+   *
+   * @throws AppError if the stack depth exceeds MAX_STATE_STACK_DEPTH
+   *
+   * @example
+   * // Save current state
+   * state.push();
+   *
+   * // Modify state for overlay
+   * state.disableDepthTest();
+   * state.enableBlend();
+   * state.setBlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+   *
+   * // Render overlay...
+   *
+   * // Restore previous state
+   * state.pop();
+   *
+   * @see pop() to restore the saved state
+   * @see scoped() for automatic push/pop with a callback
+   */
+  push(): void {
+    if (this._stateStack.length >= MAX_STATE_STACK_DEPTH) {
+      throw new AppError(ErrorCode.CORE_STATE_ERROR, {
+        resource: 'WebGLState',
+        method: 'push',
+        detail: `State stack overflow: maximum depth of ${MAX_STATE_STACK_DEPTH} exceeded. Check for unbalanced push/pop calls.`,
+      });
+    }
+
+    // Deep copy the current state
+    const snapshot: StateSnapshot = {
+      capabilities: new Map(this._enabledCapabilities),
+      nonBinaryCapabilities: new Map(this._nonBinaryCapabilities),
+      parameters: new Map(
+        Array.from(this._parameters.entries()).map(([key, args]) => [
+          key,
+          [...args], // Copy the args array
+        ]),
+      ),
+    };
+
+    this._stateStack.push(snapshot);
+  }
+
+  /**
+   * Pops the most recently pushed state and restores it
+   *
+   * This restores all tracked state (capabilities, parameters) to what
+   * they were when `push()` was last called. State that was changed
+   * between push and pop will be reset.
+   *
+   * @throws AppError if the stack is empty (no matching push)
+   *
+   * @example
+   * state.push();
+   * state.disableDepthTest();
+   * // ... render with depth test disabled ...
+   * state.pop(); // Depth test is restored to previous value
+   *
+   * @see push() to save state to the stack
+   * @see scoped() for automatic push/pop with a callback
+   */
+  pop(): void {
+    const snapshot = this._stateStack.pop();
+    if (!snapshot) {
+      throw new AppError(ErrorCode.CORE_STATE_ERROR, {
+        resource: 'WebGLState',
+        method: 'pop',
+        detail: 'State stack underflow: pop() called without matching push().',
+      });
+    }
+
+    this._restoreSnapshot(snapshot);
+  }
+
+  /**
+   * Executes a callback with temporary state, automatically restoring afterward
+   *
+   * This is a convenience wrapper around push/pop that ensures state is
+   * always restored, even if the callback throws an exception.
+   *
+   * @param fn - The callback to execute with temporary state
+   * @returns The return value of the callback
+   *
+   * @example
+   * // Render UI with temporary state
+   * state.scoped(() => {
+   *   state.disableDepthTest();
+   *   state.enableBlend();
+   *   renderUI();
+   * }); // State automatically restored here
+   *
+   * @example
+   * // Get a value while using temporary state
+   * const result = state.scoped(() => {
+   *   state.setViewport(0, 0, 100, 100);
+   *   return renderThumbnail();
+   * });
+   */
+  scoped<T>(fn: () => T): T {
+    this.push();
+    try {
+      return fn();
+    } finally {
+      this.pop();
+    }
+  }
+
+  /**
+   * Returns the current depth of the state stack
+   *
+   * Useful for debugging unbalanced push/pop calls.
+   *
+   * @returns The number of saved states on the stack
+   *
+   * @example
+   * console.log(state.stackDepth); // 0
+   * state.push();
+   * console.log(state.stackDepth); // 1
+   * state.push();
+   * console.log(state.stackDepth); // 2
+   * state.pop();
+   * console.log(state.stackDepth); // 1
+   */
+  get stackDepth(): number {
+    return this._stateStack.length;
+  }
+
+  /**
+   * Restores state from a snapshot
+   * @internal
+   */
+  private _restoreSnapshot(snapshot: StateSnapshot): void {
+    // Restore binary capabilities
+    // First, disable capabilities that were not in the snapshot
+    for (const [name, enabled] of this._enabledCapabilities) {
+      const wasEnabled = snapshot.capabilities.get(name);
+      if (wasEnabled === undefined) {
+        // This capability wasn't tracked before - disable it
+        if (enabled) {
+          this._gl.disable(
+            this._gl[name as keyof WebGL2RenderingContext] as GLenum,
+          );
+          this._enabledCapabilities.set(name, false);
+        }
+      }
+    }
+
+    // Then restore all capabilities from snapshot
+    for (const [name, wasEnabled] of snapshot.capabilities) {
+      const isEnabled = this._enabledCapabilities.get(name);
+      if (isEnabled !== wasEnabled) {
+        if (wasEnabled) {
+          this._gl.enable(
+            this._gl[name as keyof WebGL2RenderingContext] as GLenum,
+          );
+        } else {
+          this._gl.disable(
+            this._gl[name as keyof WebGL2RenderingContext] as GLenum,
+          );
+        }
+        this._enabledCapabilities.set(name, wasEnabled);
+      }
+    }
+
+    // Restore non-binary capabilities
+    for (const [name, value] of snapshot.nonBinaryCapabilities) {
+      const currentValue = this._nonBinaryCapabilities.get(name);
+      if (currentValue !== value) {
+        const setterName = NON_BINARY_CAPABILITIES[name];
+        const setter = this._gl[setterName as keyof WebGL2RenderingContext] as (
+          value: GLenum,
+        ) => void;
+        if (setter && typeof setter === 'function') {
+          setter.call(this._gl, value);
+        }
+        this._nonBinaryCapabilities.set(name, value);
+      }
+    }
+
+    // Restore parameters
+    for (const [name, args] of snapshot.parameters) {
+      const currentArgs = this._parameters.get(name);
+      const argsMatch =
+        currentArgs &&
+        currentArgs.length === args.length &&
+        currentArgs.every((val, idx) => val === args[idx]);
+
+      if (!argsMatch) {
+        const fn = this._gl[name as keyof WebGL2RenderingContext] as (
+          ...args: any[]
+        ) => void;
+        if (fn && typeof fn === 'function') {
+          fn.apply(this._gl, args);
+        }
+        this._parameters.set(name, args);
+      }
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
