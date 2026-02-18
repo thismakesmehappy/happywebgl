@@ -198,6 +198,10 @@ type AttributeLayout = {
  * @see IndexBuffer for index data storage
  */
 export class Geometry {
+  // TODO: Add normalize() method — rescale vertex positions to fit a unit
+  // bounding box (or -1..1 range), opt-in only. Useful for importing meshes
+  // at arbitrary scales. Should be applied before scene graph transforms.
+
   /**
    * The rendering context
    * @internal

@@ -2,7 +2,7 @@
 
 **Project:** WebGL Graphics Library
 **Phase:** 1 - Core MVP (Layer 2 GPU Resources)
-**Tests:** 2,049 passing | 100% lines (shaders) | 100% branch (shaders)
+**Tests:** 2,618 passing | 100% lines (shaders) | 100% branch (shaders)
 
 ---
 
@@ -16,6 +16,7 @@
 - VertexArray.ts (43 tests) - VAO wrapper with attribute configuration
 - errors/ module (10 tests) - AppError, ErrorCodes, message formatting
 - textures/ module (157 tests) - Texture2D, TextureCubeMap, Texture3D, Texture2DArray
+- Object3D.ts (141 tests) - scene graph node with transforms, hierarchy, traversal, search, cloning
 
 ---
 
@@ -55,6 +56,7 @@ npm test -- --reporter=dot            # Minimal output (use for large failures)
 src/
 ├── core/           # GLContext, Canvas, Renderer, WebGLState
 ├── resources/      # Program, VertexArray, buffers/, textures/, shaders/
+├── scene/          # Object3D, Scene, Mesh
 ├── errors/         # AppError, ErrorCodes, messages
 └── math/           # vectors/, matrices/, quaternions/
 ```

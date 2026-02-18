@@ -320,13 +320,12 @@ Blocked until Layer 2.5 complete:
 - Material.ts (~250 lines) - Uses Shader + uniforms
 - BasicMaterial.ts (~100 lines) - Default material implementation
 
-### Layer 4: Scene Graph (0% complete, blocked)
+### Layer 4: Scene Graph (75% complete)
 
-Blocked until Layer 3 complete:
-- Object3D.ts (~150 lines) - Transform hierarchy
-- Scene.ts (~100 lines) - Object container
-- Mesh.ts (~100 lines) - Geometry + Material combination
-- WebGLRenderer.ts (~300 lines) - Render orchestration
+- Object3D.ts (~520 lines) - Transform hierarchy, traversal, search, cloning ✅
+- Scene.ts (~100 lines) - Object container with id/name/tag registries ✅
+- Mesh.ts (~100 lines) - Geometry + Material combination ✅
+- WebGLRenderer.ts (~300 lines) - Render orchestration (planned)
 
 ---
 

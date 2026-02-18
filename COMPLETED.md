@@ -133,12 +133,34 @@ throw new AppError(ErrorCode.RES_INVALID_ARG, {
 
 ---
 
+### Scene Graph (Complete)
+
+| Feature | File | Tests | Status |
+| --- | --- | --- | --- |
+| Object3D | `src/scene/Object3D.ts` | 141 | ✅ Complete |
+| Scene | `src/scene/Scene.ts` | 49 | ✅ Complete |
+| Mesh | `src/scene/Mesh.ts` | 7 | ✅ Complete |
+
+**Object3D API:**
+- **Transforms:** position, rotation (Quaternion), scale, localMatrix (T*R*S), worldMatrix
+- **Hierarchy:** add, removeChild, removeFromParent, removeAllChildren, parent, children
+- **Traversal:** traverse, traverseVisible (skips invisible subtrees)
+- **Search:** findByName, findById, findByTag (returns all matches)
+- **Cloning:** clone (shallow, no children), deepClone (recursive subtree)
+- **World decomposition:** getWorldPosition, getWorldQuaternion (scale-normalized), getWorldScale
+- **Metadata:** uid, id, name, tags, layers, renderOrder, userData, visible
+- **Matrix updates:** updateMatrix, updateWorldMatrix (recursive)
+
+**Object3D Coverage:** 100% lines | 94.91% branches
+
+---
+
 ## Phase 1 Remaining (Planned)
 
 **Layer 2.5:** Shader.ts (wraps Program, reserved for Phase 4+ utilities)
 
 **Layer 3:** Geometry.ts, Material.ts, BasicMaterial.ts
 
-**Layer 4:** Object3D.ts, Scene.ts, Mesh.ts, WebGLRenderer.ts
+**Layer 4:** ~~Object3D.ts, Scene.ts, Mesh.ts,~~ WebGLRenderer.ts
 
 **Finalization:** Image export & demo

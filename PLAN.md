@@ -217,7 +217,7 @@ src/
 - **Layer 2:** Program, Buffer, VertexArray, Texture (GPU resources)
 - **Layer 2.5:** Shader (user-friendly wrapper, Phase 4+ utilities reserved)
 - **Layer 3:** Geometry, Material, BasicMaterial (high-level concepts)
-- **Layer 4:** Object3D, Scene, Mesh, WebGLRenderer (scene graph)
+- **Layer 4:** Object3D ✅, Scene ✅, Mesh ✅, WebGLRenderer (scene graph)
 
 **Program vs Shader:**
 - **Program** (Layer 2): Direct WebGL program wrapper
@@ -238,7 +238,7 @@ src/
 - Simple geometry (triangle, quad)
 - Basic material (flat color)
 - Simple renderer that can draw a mesh
-- Object3D base class with transform (position, rotation, scale)
+- Object3D base class with transform, hierarchy, traversal, search, cloning ✅
 - Basic image export capability (browser: `toDataURL()`, Node.js: basic)
 - Demo: Rotating colored triangle/cube
 
@@ -871,7 +871,27 @@ const skyboxProgram = Program.createSkybox(ctx);
 const bloomProgram = Program.createBloom(ctx);
 ```
 
-#### 4. Context + Canvas + Program Bundles
+#### 4. Geometry Normalization
+
+Opt-in method to rescale vertex positions to a unit bounding box (or -1..1 range). Useful when importing meshes authored at arbitrary scales that need consistent sizing before scene graph transforms are applied.
+
+```typescript
+// Rescale vertices so the bounding box fits within a unit cube centered at origin
+geometry.normalize();
+
+// Then use scene graph transforms for final placement/sizing
+mesh.scale.set(2, 2, 2);
+mesh.position.set(0, 1, 0);
+```
+
+**Implementation:** `Geometry.normalize()` in `src/geometry/Geometry.ts`
+
+**Notes:**
+- Must be opt-in — never normalize automatically (artists author meshes at specific scales)
+- Should compute bounding box, then uniformly scale + translate vertices
+- Apply before scene graph transforms, not after
+
+#### 5. Context + Canvas + Program Bundles
 
 Pre-configured "recipe" combinations for specific effects:
 
